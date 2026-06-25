@@ -1,0 +1,9 @@
+Skill: requirement-normalizer
+Goal: Transform the input into a concise, unambiguous requirement baseline.
+
+Produce:
+- Scope statement
+- In-scope elements
+- Out-of-scope elements
+- Assumptions list
+

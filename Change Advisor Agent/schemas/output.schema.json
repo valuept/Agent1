@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ChangeAdvisorOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "summary",
+    "open_questions",
+    "risks",
+    "implementation_steps",
+    "test_cases",
+    "handover_note",
+    "approval_note"
+  ],
+  "properties": {
+    "summary": {
+      "type": "string",
+      "minLength": 20
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "priority",
+          "description",
+          "mitigation"
+        ],
+        "properties": {
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "description": {
+            "type": "string"
+          },
+          "mitigation": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "implementation_steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "step", "owner_hint"],
+        "properties": {
+          "id": { "type": "string" },
+          "step": { "type": "string" },
+          "owner_hint": { "type": "string" },
+          "dependency_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "test_cases": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "precondition", "expected_result"],
+        "properties": {
+          "name": { "type": "string" },
+          "precondition": { "type": "string" },
+          "expected_result": { "type": "string" }
+        }
+      }
+    },
+    "handover_note": {
+      "type": "string",
+      "minLength": 20
+    },
+    "approval_note": {
+      "type": "string",
+      "minLength": 10
+    }
+  }
+}

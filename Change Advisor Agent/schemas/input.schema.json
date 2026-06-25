@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ChangeAdvisorInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "change_request",
+    "project_context",
+    "constraints"
+  ],
+  "properties": {
+    "change_request": {
+      "type": "string",
+      "minLength": 30
+    },
+    "project_context": {
+      "type": "string",
+      "minLength": 10
+    },
+    "constraints": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 3
+      }
+    },
+    "affected_objects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "target_timeline": {
+      "type": "string"
+    }
+  }
+}

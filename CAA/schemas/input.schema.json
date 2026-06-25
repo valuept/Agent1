@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SAP Change Request Input",
+  "type": "object",
+  "required": [
+    "change_id",
+    "title",
+    "description",
+    "business_context"
+  ],
+  "properties": {
+    "change_id": {
+      "type": "string",
+      "description": "Unique identifier for this change request"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short descriptive title (max 100 chars)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the change"
+    },
+    "business_context": {
+      "type": "object",
+      "description": "Business context and drivers",
+      "properties": {
+        "initiator": {
+          "type": "string",
+          "description": "Who initiated this change"
+        },
+        "business_drivers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Business reasons for the change"
+        },
+        "target_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Target completion date (YYYY-MM-DD)"
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "description": "Scope definition",
+      "properties": {
+        "systems_affected": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "SAP systems or modules affected"
+        },
+        "departments_involved": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Departments involved"
+        },
+        "estimated_effort_hours": {
+          "type": "number",
+          "description": "Estimated effort in hours"
+        }
+      }
+    },
+    "technical_details": {
+      "type": "object",
+      "description": "Technical specifics",
+      "properties": {
+        "sap_version": {
+          "type": "string",
+          "description": "Target SAP version (S/4HANA, BTP, etc.)"
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "SAP modules involved (MM, FI, SD, etc.)"
+        },
+        "technical_approach": {
+          "type": "string",
+          "description": "Proposed technical approach"
+        }
+      }
+    },
+    "risks_known": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Known or suspected risks"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Known dependencies on other changes"
+    },
+    "skill_requests": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["grill-me"]
+      },
+      "description": "Optional skills to activate (e.g. grill-me for deep-dive)"
+    },
+    "leanix_export": {
+      "type": "object",
+      "description": "Optional LeanIX integration",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "application_id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

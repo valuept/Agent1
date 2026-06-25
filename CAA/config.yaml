@@ -1,0 +1,85 @@
+name: SAP-Consulting-Change-Advisor
+version: 2.0.0
+purpose: >
+  Turns a raw change request into a review-ready advisory package with
+  structured risks, open questions, compliance checks, implementation steps,
+  and test cases.
+
+runtime:
+  mode: human-in-the-loop
+  orchestrator: powershell
+  entrypoint: run-agent.ps1
+
+contracts:
+  input_schema: schemas/input.schema.json
+  output_schema: schemas/output.schema.json
+
+pipeline:
+  pattern: evaluator-optimizer
+  core_sequence:
+    - requirement-normalizer
+    - gap-question-generator
+    - impact-analyzer
+    - compliance-checker
+    - testcase-designer
+    - handover-writer
+  evaluator_optimizer:
+    enabled: true
+    max_passes: 2
+    gates:
+      - evidence_only
+      - schema_compliance
+      - explicit_unknowns
+      - risk_transparency
+
+context_engineering:
+  ordered_sources:
+    - memory/00-governance
+    - memory/10-project-context
+    - memory/20-domain-knowledge
+    - memory/30-architecture-decisions
+    - memory/50-templates
+  include_globs:
+    - "*.md"
+    - "*.txt"
+  max_files: 30
+
+skills:
+  - id: requirement-normalizer
+    file: skills/requirement-normalizer.txt
+  - id: gap-question-generator
+    file: skills/gap-question-generator.txt
+  - id: impact-analyzer
+    file: skills/impact-analyzer.txt
+  - id: compliance-checker
+    file: skills/compliance-checker.txt
+  - id: testcase-designer
+    file: skills/testcase-designer.txt
+  - id: handover-writer
+    file: skills/handover-writer.txt
+  - id: grill-me
+    file: skills/grill-me.txt
+
+optional_modules:
+  - id: grill-me
+    activation:
+      input_field: skill_requests
+      contains: /grill-me
+  - id: leanix-export-preparation
+    activation:
+      input_field: leanix_export.enabled
+      equals: true
+    artifact_path: artifacts/leanix-export-preparation.txt
+
+hooks:
+  pre:
+    - hooks/pre-validate-input.ps1
+    - hooks/pre-pii-guard.ps1
+  post:
+    - hooks/post-validate-output.ps1
+
+memory:
+  structure_root: memory
+  write_targets:
+    - memory/60-cases
+    - memory/70-retrospectives

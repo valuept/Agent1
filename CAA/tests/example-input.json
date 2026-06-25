@@ -1,0 +1,49 @@
+{
+  "change_id": "CHG-2026-001",
+  "title": "Migrate to S/4HANA Cloud Public Edition",
+  "description": "Move SAP financial systems (FI, CO) from on-premise ECC 6.0 to cloud-based S/4HANA with integrated reporting platform. Expected to reduce infrastructure costs by 40% and improve system availability.",
+  "business_context": {
+    "initiator": "Chief Technology Officer",
+    "business_drivers": [
+      "Reduce on-premise infrastructure costs by 40%",
+      "Improve system availability from 99% to 99.9%",
+      "Enable faster deployment of financial enhancements",
+      "Achieve cloud-ready architecture for future innovations"
+    ],
+    "target_date": "2026-12-23"
+  },
+  "scope": {
+    "systems_affected": [
+      "SAP ECC 6.0",
+      "Financial modules (FI, CO)",
+      "Reporting (Crystal Reports → SAP Analytics Cloud)"
+    ],
+    "departments_involved": [
+      "Finance",
+      "Controller Office",
+      "IT Operations",
+      "Business Intelligence"
+    ],
+    "estimated_effort_hours": 600
+  },
+  "technical_details": {
+    "sap_version": "S/4HANA Cloud Public Edition 2026",
+    "modules": [
+      "FI (Financial Accounting)",
+      "CO (Controlling)",
+      "APO (Analytics & Planning)"
+    ],
+    "technical_approach": "Direct migration with data transformation. Leverage SAP standard financial processes. Reporting via SAP Analytics Cloud with federated model."
+  },
+  "risks_known": [
+    "Custom ABAP code compatibility unknown",
+    "Integration with legacy accounting system complexity",
+    "User adoption risk for new cloud interface",
+    "Data migration data quality concerns"
+  ],
+  "dependencies": [
+    "CHG-2026-002 (Data quality cleansing project)",
+    "CHG-2026-003 (Reporting enhancement - blocked until analytics platform ready)"
+  ],
+  "skill_requests": []
+}

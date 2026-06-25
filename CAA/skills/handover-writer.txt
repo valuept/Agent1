@@ -1,0 +1,457 @@
+# SKILL: handover-writer
+
+## Purpose
+Packages the complete advisory analysis into a review-ready markdown document with executive summary, detailed findings, and sign-off checklist.
+
+## Input
+- All previous skills output: normalized requirement, questions, impact analysis, compliance checks, test cases, implementation steps
+- Templates from memory/50-templates.md
+- Project context from memory/10-project-context.md
+
+## Process
+
+### Step 1: Executive Summary (1-2 pages)
+
+**Content**:
+- Change overview (ID, title, business value)
+- Risk assessment (3 top risks, overall risk score)
+- 3 critical questions stakeholders must answer
+- Recommendation: GO / CONDITIONAL / NO-GO
+- Timeline overview
+- Stakeholder roles and sign-off
+
+**Structure**:
+```markdown
+# [Change ID] - [Title]
+
+## Executive Summary
+
+**Change Overview**
+- [1-2 sentence business case]
+
+**Scope**: [Systems, departments, users affected]
+
+**Timeline**: [Start date] to [Target completion date]
+
+**Effort**: [Total hours] across [duration]
+
+**Risk Level**: [Low / Medium / High / Critical]
+
+## Recommendation
+
+**[GO / CONDITIONAL / NO-GO]**
+
+[1-paragraph recommendation with key rationale]
+
+## Top 3 Risks
+
+| Risk | Prob | Impact | Score | Mitigation |
+|------|------|--------|-------|-----------|
+| [Risk 1] | [L/M/H] | [L/M/H] | [1-9] | [Brief mitigation] |
+| [Risk 2] | [L/M/H] | [L/M/H] | [1-9] | [Brief mitigation] |
+| [Risk 3] | [L/M/H] | [L/M/H] | [1-9] | [Brief mitigation] |
+
+## Critical Questions for Stakeholders
+
+1. [Question 1]?
+2. [Question 2]?
+3. [Question 3]?
+
+## Key Milestones
+
+- [Milestone 1]: [Date]
+- [Milestone 2]: [Date]
+- [Milestone 3]: [Date]
+- [Go-Live]: [Date]
+```
+
+### Step 2: Detailed Findings (5-10 pages)
+
+**Section 1: Normalized Requirement**
+- Copy normalized requirement from requirement-normalizer
+- Include in/out of scope, acceptance criteria
+
+**Section 2: Open Questions**
+- All open questions from gap-question-generator
+- Grouped by category and priority
+
+**Section 3: Impact Analysis**
+- Risk matrix (full)
+- Systems affected
+- User impact by group
+- Performance considerations
+- Data considerations
+
+**Section 4: Compliance Assessment**
+- Framework-by-framework assessment
+- Status for each framework
+- Blockers and conditionals
+- Sign-off owners
+
+**Section 5: Implementation Strategy**
+- Implementation steps with dependencies
+- Timeline and phase breakdown
+- Resource requirements
+- Rollback procedures
+
+**Section 6: Test Strategy**
+- Test approach and schedule
+- Critical test cases (top 5)
+- Go-live testing plan
+- Data migration validation approach
+
+### Step 3: Sign-Off & Handover
+
+**Section 7: Sign-Off Checklist**
+
+```markdown
+## Sign-Off Checklist
+
+**Requirements & Scope**
+- [ ] Requirements normalized and unambiguous
+- [ ] In-scope and out-of-scope items agreed
+- [ ] Acceptance criteria approved
+- [ ] Signed by: [Role] on [Date]
+
+**Risk & Impact Assessment**
+- [ ] Risk matrix reviewed and acceptable
+- [ ] Mitigation strategies approved
+- [ ] User impact communication plan in place
+- [ ] Signed by: [Role] on [Date]
+
+**Compliance & Governance**
+- [ ] All compliance frameworks reviewed
+- [ ] Compliance issues resolved or mitigated
+- [ ] CAB pre-review completed (if applicable)
+- [ ] Signed by: [Role] on [Date]
+
+**Implementation & Testing**
+- [ ] Implementation plan approved
+- [ ] Test strategy approved
+- [ ] Resources committed
+- [ ] Signed by: [Role] on [Date]
+
+**Go-Live Readiness**
+- [ ] All critical questions answered
+- [ ] No HIGH or CRITICAL risks without mitigation
+- [ ] Data migration validation plan approved
+- [ ] Cutover plan tested
+- [ ] Signed by: [Sponsor] on [Date]
+```
+
+**Section 8: Next Steps**
+
+```markdown
+## Next Steps
+
+1. **Stakeholder Review** [Date]: 
+   - Finance Director reviews compliance items
+   - IT Architect reviews technical approach
+   - Process Owner reviews workflow changes
+
+2. **Open Questions Resolution** [Date]: 
+   - Technical deep-dive sessions
+   - Compliance clarifications
+   - Vendor/partner coordination
+
+3. **CAB Pre-Review** [Date]: 
+   - Submit change package to Change Advisory Board
+   - Address CAB feedback
+
+4. **Implementation Planning** [Date]: 
+   - Create detailed project plan
+   - Resource allocation
+   - Communication cascade
+
+5. **Project Kickoff** [Date]:
+   - Team mobilization
+   - Kick-off meeting
+   - Initial setup phase begins
+```
+
+### Step 4: Document Quality Control
+
+Before handover:
+- [ ] All sections are complete and reference-accurate
+- [ ] No unresolved TODOs or placeholders
+- [ ] Figures and numbers are consistent across sections
+- [ ] Risk scores calculated correctly
+- [ ] All sign-off owners identified with clear actions
+- [ ] Markdown formatting clean and professional
+- [ ] Document is 8-15 pages (concise but complete)
+
+## Example Output
+
+```markdown
+# CHG-2026-001 - S/4HANA Cloud Migration
+
+## Executive Summary
+
+**Change Overview**
+
+This change migrates SAP financial, materials management, and sales systems from SAP ECC 6.0 on-premise to SAP S/4HANA Cloud Public Edition. The migration reduces infrastructure costs by 40% while improving system availability from 99% to 99.9%, enabling the organization to focus on business transformation rather than infrastructure management.
+
+**Scope**: 3 modules (FI, CO, MM, SD), 500+ users, 3 departments (Finance, Supply Chain, Sales)
+
+**Timeline**: Project Initiation (Q3 2026) → Data Cleansing (Q3-Q4) → Testing & Cutover (Q4 2026) → Go-Live (December 2026)
+
+**Effort**: 600 hours over 6 months across 12-person team
+
+**Risk Level**: 🔴 HIGH (Risk Score 6/9)
+
+## Recommendation
+
+✅ **CONDITIONAL GO** - Proceed with migration subject to resolution of 4 compliance "Requires Review" items:
+1. Data residency compliance (must verify EU data stays in EU datacenters)
+2. GDPR data deletion capability (must be built into cloud configuration)
+3. SOX IT controls (must be documented and externally audited)
+4. SoD remediation (must separate invoice creation from approval role)
+
+Estimated 2-week effort to resolve these conditionals. Do not proceed to CAB review until all 4 are resolved.
+
+## Top 3 Risks
+
+| Risk | Prob | Impact | Score | Mitigation |
+|------|------|--------|-------|-----------|
+| Custom ABAP code incompatibility with cloud | High | High | 9 | Code assessment (Week 1), SAP CAP training (Week 2-3), legacy feature wrapping as needed |
+| Data migration quality issues | Medium | High | 6 | Parallel data cleansing project (CHG-2026-002), reconciliation automation, validation rules |
+| Performance degradation on integrations | Medium | Medium | 4 | API standardization, error handling queues, load testing with legacy systems (Week 8-10) |
+
+## Critical Questions for Stakeholders
+
+1. **Q1**: Which specific SAP Cloud deployment are we targeting - Public, Private, or Hybrid Cloud? (Affects timeline, cost, and feature set)
+2. **Q2**: What percentage of current ABAP code is custom vs. standard? (>50% custom = significant cloud migration challenges)
+3. **Q3**: Who specifically will lead the implementation, and are they available full-time starting Project Initiation? (Timeline depends on resource commitment)
+
+## Key Milestones
+
+- Project Initiation: September 1, 2026
+- CAB Approval: September 15, 2026
+- Data Cleansing Phase Complete: November 1, 2026
+- System Testing Complete: November 20, 2026
+- Data Migration Validation Complete: December 15, 2026
+- Go-Live: December 23, 2026 (before year-end cutoff)
+
+---
+
+## Detailed Analysis
+
+### 1. Normalized Requirement
+
+**Business Value**: Reduce infrastructure costs by 40% and improve system availability from 99% to 99.9%
+
+**Scope Summary**: Move from SAP ECC 6.0 on-premise to S/4HANA Cloud Public Edition. Includes financial modules (FI, CO), materials management (MM), and sales & distribution (SD), covering all 500+ users.
+
+**In Scope**:
+- FI, CO, MM, SD modules migration
+- Master data migration (500+ customers, 10,000+ materials, 1,500+ vendors)
+- Reporting solution migration to SAP Analytics Cloud
+- User training for 500+ users
+- Integration with existing non-SAP systems via SAP Cloud Integration
+
+**Out of Scope**:
+- HR module (planned for Phase 2 in 2027)
+- Historical data archival (keep on-premise for compliance)
+- Complete custom ABAP code rewrite (use SAP Cloud-readiness tools where possible)
+
+**Dependencies**:
+- Blocks CHG-2026-003 (Reporting Enhancement)
+- Depends on CHG-2026-002 (Data Quality Cleansing)
+
+**Acceptance Criteria**:
+- [ ] Functional: All daily transactions (POs, invoices, orders) process end-to-end in cloud
+- [ ] Performance: Average user response time < 2 seconds
+- [ ] Quality: Zero critical data consistency issues
+- [ ] User Experience: 95% of users pass training competency test
+
+### 2. Open Questions
+
+**Critical (MUST resolve before CAB approval)**:
+- Q1: Public vs. Private vs. Hybrid Cloud deployment?
+- Q2: Custom ABAP code inventory and feasibility assessment?
+- Q3: Implementation lead resource commitment?
+- Q4: Data residency compliance for EU? (GDPR compliance)
+
+**High (Should resolve before implementation)**:
+- Q5: Organizational precedent for SAP-to-cloud migrations?
+- Q6: Integration proven with legacy systems at this scale?
+
+**Medium**:
+- Q7: Post-go-live success metrics and KPIs?
+
+### 3. Impact Analysis
+
+**Risk Matrix Summary**: 7 identified risks, 3 HIGH, 4 MEDIUM
+
+**Affected Systems**:
+- SAP ECC 6.0 (being replaced)
+- Third-party Legacy Accounting System (integration risk)
+- SAP Analytics Cloud (new platform)
+
+**User Impact**:
+- Finance (50 users): MEDIUM adoption risk - older demographic
+- Supply Chain (200 users): LOW adoption risk - tech-comfortable
+- Sales (150 users): LOW adoption risk - minimal workflow change
+
+**Performance**: Month-end close time reduction from 8 hours to 4 hours expected
+
+### 4. Compliance Assessment
+
+| Framework | Status | Risk | Owner | Deadline |
+|-----------|--------|------|-------|----------|
+| SAP Best Practices | ✅ Compliant | Low | Finance Director | N/A |
+| Change Control | ⚠️ Requires Review | Medium | Project Manager | 2026-09-15 |
+| Data Classification | ⚠️ Requires Review | Medium | Data Governance | 2026-09-15 |
+| GDPR Compliance | ⚠️ Requires Review | Medium | Legal/DPO | 2026-09-15 |
+| SOX Compliance | ⚠️ Requires Review | Medium | Internal Audit | 2026-09-15 |
+
+**Blockers**: None currently, but all 4 "Requires Review" items must be resolved
+
+**Conditionals**: CONDITIONAL GO - See remediation section
+
+### 5. Implementation Strategy
+
+**Phase 1: Planning & Assessment** (Week 1-2)
+- Custom code inventory
+- Technical architecture finalization
+- Resource allocation
+
+**Phase 2: Data Cleansing** (Week 3-14)
+- Data quality validation (parallel with CHG-2026-002)
+- Master data standardization
+- Historical data archival plan
+
+**Phase 3: System Build & Testing** (Week 8-14)
+- Cloud system configuration
+- Integration development
+- Integration testing
+
+**Phase 4: User Testing & Training** (Week 12-16)
+- User acceptance testing
+- Training delivery (50 hours per user)
+- Cutover simulation
+
+**Phase 5: Cutover & Go-Live** (Week 17)
+- Final data migration
+- Cutover night (4-hour maintenance window)
+- Post-go-live support
+
+**Resources Required**:
+- Project Manager: 1 FTE
+- SAP Cloud Architect: 1 FTE
+- Integration Lead: 1 FTE (shared with other projects)
+- Developers: 3 FTE
+- QA Lead: 1 FTE
+- Training Coordinator: 0.5 FTE
+- Business SMEs: 3 (part-time)
+
+**Rollback Plan**: 
+- Keep ECC system operational for 2 weeks post-go-live
+- Maintain data sync capability for 48 hours in case of critical issue
+- Rollback decision point: 48 hours post-cutover
+
+### 6. Test Strategy
+
+**Test Phases**:
+1. Unit Testing (Dev team, Week 8)
+2. Integration Testing (QA team, Week 9-10)
+3. System Testing (QA + Business, Week 11-12)
+4. User Acceptance Testing (Users, Week 13-14)
+5. Performance Testing (Performance team, Week 12)
+6. Cutover Simulation (Full team, Week 16)
+
+**Critical Test Cases**:
+- TC-001: Create Purchase Order (end-to-end)
+- TC-003: Batch Invoice Processing (performance)
+- TC-005: Data Migration Reconciliation (data quality)
+- TC-006: Integration with Legacy System (real-time)
+- TC-002: Non-standard scenarios and error handling
+
+**Go-Live Readiness Criteria**:
+- All HIGH priority tests passed
+- No CRITICAL issues open
+- Performance targets met
+- Data reconciliation signed-off
+- Cutover simulation successful
+
+---
+
+## Sign-Off Checklist
+
+**Requirements & Scope** 
+- [ ] Requirements normalized - Signed by Finance Director - Due 2026-09-15
+- [ ] In/Out of scope approved - Signed by Process Owner - Due 2026-09-15
+- [ ] Acceptance criteria agreed - Signed by QA Lead - Due 2026-09-15
+
+**Risk & Impact Assessment**
+- [ ] Risk matrix acceptable - Signed by CIO - Due 2026-09-15
+- [ ] Mitigation plans approved - Signed by Project Manager - Due 2026-09-15
+- [ ] User communication plan ready - Signed by Communications - Due 2026-09-15
+
+**Compliance & Governance**
+- [ ] Compliance issues resolved - Signed by Chief Counsel - Due 2026-09-15
+- [ ] CAB pre-review completed - Signed by CAB Chair - Due 2026-09-20
+
+**Implementation & Testing**
+- [ ] Implementation plan approved - Signed by Sponsor - Due 2026-10-01
+- [ ] Test strategy approved - Signed by QA Manager - Due 2026-10-01
+- [ ] Resources committed - Signed by Department Heads - Due 2026-10-01
+
+**Go-Live Readiness**
+- [ ] Critical questions answered - Signed by Project Manager - Due 2026-12-01
+- [ ] Data migration validated - Signed by Finance Director - Due 2026-12-15
+- [ ] Cutover plan tested - Signed by Technical Lead - Due 2026-12-20
+- [ ] Final GO decision - Signed by Sponsor - Due 2026-12-22
+
+---
+
+## Next Steps
+
+1. **Stakeholder Review** (2026-09-10 to 2026-09-12): 
+   - Schedule 1-hour review meetings with Finance Director, IT Architecture, Process Owner
+   - Gather feedback on risks and compliance items
+
+2. **Critical Questions Workshops** (2026-09-13 to 2026-09-14):
+   - Technical deep-dive on custom code feasibility
+   - GDPR compliance workshop with Legal and DPO
+   - Cloud deployment options workshop with SAP architect
+
+3. **Compliance Remediation** (2026-09-15):
+   - Resolve all 4 "Requires Review" compliance items
+   - Obtain compliance sign-offs
+
+4. **CAB Pre-Review** (2026-09-15):
+   - Submit package to Change Advisory Board
+   - Schedule CAB approval meeting for 2026-09-20
+
+5. **CAB Approval & Project Kickoff** (2026-09-21):
+   - Formal approval to proceed
+   - Team mobilization
+   - Detailed planning begins
+
+---
+
+**Document Status**: ✅ READY FOR STAKEHOLDER REVIEW
+
+**Document Version**: 2.0 (Pass 2 optimization applied)
+
+**Last Updated**: 2026-06-11
+
+**Next Review Date**: 2026-09-10 (Before CAB submission)
+```
+
+## Quality Gates
+
+✅ **Gate: Evidence Only** - All recommendations backed by analysis above  
+✅ **Gate: Schema Compliance** - Output matches handover_package structure  
+✅ **Gate: Explicit Unknowns** - Open questions clearly listed  
+✅ **Gate: Risk Transparency** - Risks ranked and mitigation clearly stated  
+
+## Implementation Notes
+- Compile all prior skill outputs into cohesive narrative
+- Executive summary should be readable by CFO/CTO in 5 minutes
+- Detailed sections for deep-dive technical review
+- Clear sign-off checklist with specific owners and deadlines
+- Document should be 8-15 pages (typically 12 pages for major changes)
+- Export to PDF for formal distribution
+

@@ -1,0 +1,178 @@
+# SKILL: gap-question-generator
+
+## Purpose
+Identifies 5-7 critical questions that stakeholders must answer to reduce ambiguity and risk.
+
+## Input
+- Normalized requirement from requirement-normalizer
+- Project context from memory/10-project-context.md
+- Domain knowledge from memory/20-domain-knowledge.md
+- Known risks from input schema
+
+## Process
+
+### Step 1: Question Categorization
+Generate questions across 6 critical categories:
+
+**1. Requirement Clarity** (1-2 questions)
+- What is NOT changing? (scope boundaries)
+- What business processes will users follow? (workflow detail)
+- Are there special cases or exceptions? (edge cases)
+
+**2. Technical Feasibility** (1-2 questions)
+- Which SAP modules/systems are involved? (scope confirmation)
+- Are there custom code, interfaces, or data migrations? (complexity)
+- What is the target SAP version and landscape? (architecture)
+
+**3. Timeline & Resources** (1 question)
+- Who will implement this and are they available? (resource commitment)
+- What is the realistic timeline given other priorities? (dependency check)
+
+**4. Risk Awareness** (1-2 questions)
+- What could go wrong that we haven't mentioned? (hidden risks)
+- Has this been tried before, and what was learned? (organizational memory)
+
+**5. Dependency Management** (0-1 questions)
+- Are there other changes this depends on? (sequencing)
+
+**6. Success Definition** (0-1 questions)
+- How will we measure success post-go-live? (long-term value)
+
+### Step 2: Question Prioritization
+
+**Critical** (must answer before proceeding):
+- Questions that unlock requirements clarity or unblock technical decisions
+- Questions about resource availability or timeline
+- Questions about show-stopper risks
+
+**High** (should answer soon):
+- Questions that reduce risk or improve quality
+- Questions about stakeholder alignment
+- Performance or compliance concerns
+
+**Medium** (nice to have):
+- Questions that optimize implementation
+- Questions about future enhancements
+- Questions about operational readiness
+
+**Low** (can defer):
+- Questions that don't affect GO/NO-GO decision
+- Questions answerable during implementation
+
+### Step 3: Question Framing
+
+Each question should:
+- Be answerable (not rhetorical)
+- Be specific (not vague)
+- Reference evidence from requirement or context
+- State why the answer matters (impact)
+
+**Template**:
+```
+Q[#] - [Question Category]: [Specific Question]?
+
+Evidence: [Why we don't know this from the requirement]
+Impact: [What depends on the answer]
+Priority: [Critical / High / Medium / Low]
+```
+
+## Example Output
+
+```
+# Open Questions for CHG-2026-001
+
+## Q1 - Requirement Clarity: CRITICAL
+**Question**: The requirement mentions "migrate to S/4HANA Cloud" but doesn't specify Public, Private, or Hybrid Cloud - which are we targeting?
+
+**Evidence**: Input states "cloud instance" but SAP offers multiple deployment options with different feature sets and compliance implications.
+
+**Impact**: Deployment choice affects timeline (Public = fastest, Private = 6-12 months), cost model, and available features. Critical for architecture decision.
+
+**Priority**: CRITICAL
+
+---
+
+## Q2 - Technical Feasibility: CRITICAL
+**Question**: The requirement mentions custom ABAP code exists in current ECC system - do we know what percentage of our codebase is custom vs. standard SAP?
+
+**Evidence**: Input mentions "leverage SAP standard processes where possible" implying some custom code exists, but no inventory provided.
+
+**Impact**: Custom code analysis determines migration effort. >50% custom code may make cloud migration infeasible or require significant rewrite.
+
+**Priority**: CRITICAL
+
+---
+
+## Q3 - Timeline & Resources: HIGH
+**Question**: Who specifically will lead the implementation, and are they available full-time starting [proposed start date]?
+
+**Evidence**: Project manager role identified in 10-project-context.md but resource commitment unknown. Previous projects delayed due to resource constraints.
+
+**Impact**: Implementation timeline depends entirely on available skilled resources. Part-time resources extend timeline 30-50%.
+
+**Priority**: HIGH
+
+---
+
+## Q4 - Risk Awareness: HIGH
+**Question**: We identified performance risk for integrations with legacy systems - has this organization successfully migrated to cloud while maintaining integrations with [specific legacy systems] before?
+
+**Evidence**: 20-domain-knowledge.md notes integration patterns as common risk. No organizational precedent mentioned in 10-project-context.md.
+
+**Impact**: If no precedent exists, load testing and proof-of-concept integration required (adds 4-8 weeks and 100+ hours).
+
+**Priority**: HIGH
+
+---
+
+## Q5 - Dependency Management: HIGH
+**Question**: The CHG-2026-002 (Data quality cleansing project) is listed as a dependency - what is its current status and committed completion date?
+
+**Evidence**: Normalized requirement identified CHG-2026-002 as a blocking dependency.
+
+**Impact**: This change cannot start data migration phase until data quality work completes. Serializes timeline.
+
+**Priority**: HIGH
+
+---
+
+## Q6 - Success Definition: MEDIUM
+**Question**: Beyond the functional acceptance criteria, what does success look like 6 months post-go-live? Are there operational metrics or user adoption targets?
+
+**Evidence**: Requirement focuses on go-live but doesn't address operational excellence or change adoption metrics.
+
+**Impact**: Helps define realistic post-implementation support and optimization phase.
+
+**Priority**: MEDIUM
+
+---
+
+## Q7 - Compliance & Governance: CRITICAL
+**Question**: Are there regulatory or compliance frameworks (GDPR, SOX, industry-specific) that affect how we design the cloud solution?
+
+**Evidence**: 00-governance.md lists compliance frameworks but requirement doesn't mention which apply to this change.
+
+**Impact**: Compliance choice affects architecture, data residency, audit requirements, and go-live readiness checks.
+
+**Priority**: CRITICAL
+```
+
+## Quality Gates
+
+✅ **Gate: Evidence Only** - Each question references specific requirement gaps  
+✅ **Gate: Schema Compliance** - Output matches open_questions structure in output.schema.json  
+✅ **Gate: Explicit Unknowns** - All critical gaps are stated as questions  
+✅ **Gate: Risk Transparency** - Questions are prioritized by business impact  
+
+## Red Flags (Escalate to gap-question-generator refinement)
+- Questions that are answerable from requirement (move to assumed)
+- Questions that are about implementation details (defer to later phases)
+- Questions without clear priority or impact statement
+
+## Implementation Notes
+- Use 00-governance.md for compliance framework questions
+- Use 20-domain-knowledge.md for technical feasibility questions
+- Use 10-project-context.md for resource and organizational context
+- Aim for 5-7 questions total (not more, not fewer)
+- Prioritize ruthlessly - only CRITICAL and HIGH questions block go/no-go
+

@@ -1,0 +1,27 @@
+# Runtime outputs - generiert, nicht Agent-Definition
+CAA/test-output/
+CAA/artifacts/*.json
+CAA/artifacts/*.md
+CAA/memory/60-cases/
+CAA/memory/70-retrospectives/
+
+Change Advisor Agent/artifacts/*.json
+Change Advisor Agent/artifacts/*.txt
+Change Advisor Agent/artifacts/*.md
+
+# Python
+Agent0/__pycache__/
+Agent0/.venv/
+Agent0/*.egg-info/
+Agent0/dist/
+Agent0/.pytest_cache/
+Agent0/src/**/__pycache__/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
+*.swp

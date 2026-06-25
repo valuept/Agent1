@@ -1,0 +1,231 @@
+# SKILL: impact-analyzer
+
+## Purpose
+Assesses the business and technical impact of the proposed change using a risk matrix, system dependency analysis, and user impact assessment.
+
+## Input
+- Normalized requirement from requirement-normalizer
+- Domain knowledge from memory/20-domain-knowledge.md
+- Architecture decisions from memory/30-architecture-decisions.md
+- Open questions from gap-question-generator
+
+## Process
+
+### Step 1: Risk Identification
+
+Identify risks across 5 dimensions:
+
+**Technical Risks**:
+- Performance degradation (volume impacts, complex queries)
+- Data consistency issues (multi-system synchronization)
+- Integration failures (third-party system compatibility)
+- Custom code breaking (ABAP compatibility in cloud migration)
+- System stability (single points of failure, redundancy)
+
+**Organizational Risks**:
+- Change adoption (user training, workflow changes)
+- Resource constraints (expertise, availability, capacity)
+- Timeline slippage (competing priorities, complexity)
+- Stakeholder misalignment (conflicting business goals)
+- Knowledge gaps (new technology, vendor lock-in)
+
+**Business Risks**:
+- Revenue impact (transaction processing downtime)
+- Compliance violations (regulatory requirements not met)
+- Cost overruns (scope creep, resource needs)
+- Process disruption (workflow breaks during transition)
+- Data loss or leakage (security, privacy)
+
+**Operational Risks**:
+- Support readiness (training, documentation, runbooks)
+- Rollback feasibility (can we undo this quickly?)
+- Monitoring/alerting gaps (can we detect problems?)
+- Vendor dependency (support SLAs, roadmap alignment)
+
+**Strategic Risks**:
+- Architectural debt (quick fix vs. sustainable design)
+- Future extensibility (locked into single vendor/technology)
+- Competitive disadvantage (delay vs. market window)
+- Skills obsolescence (hard to hire for legacy tech)
+
+### Step 2: Risk Scoring
+
+For each identified risk:
+- **Probability**: Low (1), Medium (2), High (3)
+- **Impact**: Low (1), Medium (2), High (3)
+- **Risk Score**: Probability × Impact = 1-9
+
+### Step 3: Mitigation Strategy
+
+For each risk score 4+:
+- **Mitigation Strategy**: How we prevent or reduce this risk
+- **Required Evidence**: What proof we need that mitigation worked
+- **Owner**: Who is responsible
+- **Timeline**: When mitigation actions must be complete
+
+### Step 4: Systems Impact Analysis
+
+For each system affected:
+- **System Name**: [Name]
+- **Type of Impact**: [Data model, integrations, performance, security]
+- **Risk Level**: [Low / Medium / High / Critical]
+- **Mitigation**: [How we manage this]
+
+### Step 5: User Impact Assessment
+
+For each user group:
+- **User Group**: [Role, department, count]
+- **Workflow Changes**: [What will be different]
+- **Training Needs**: [What users need to learn]
+- **Adoption Risk**: [Low / Medium / High]
+- **Mitigation**: [Training approach, communication plan]
+
+## Example Output
+
+```markdown
+# Impact Analysis for CHG-2026-001
+
+## Risk Matrix
+
+| Risk | Probability | Impact | Score | Mitigation Strategy | Owner | Timeline |
+|------|-------------|--------|-------|-------------------|-------|----------|
+| Performance degradation on month-end close | Medium | High | 6 | Load testing with production volume; index optimization; batch job tuning | SAP Architect | Week 4 of implementation |
+| Custom ABAP code incompatibility with cloud | High | High | 9 | Code assessment; SAP CAP conversion; legacy feature wrapping | Dev Lead | Weeks 1-3 of implementation |
+| Data migration data quality issues | Medium | High | 6 | Data cleansing project (CHG-2026-002); reconciliation automation; golden record creation | Data Lead | Before cutover |
+| Integration failures with legacy systems | Medium | Medium | 4 | API standardization; error handling queues; monitoring automation | Integration Lead | Weeks 8-10 |
+| User adoption resistance | Medium | Medium | 4 | Early training; super-user program; communication plan; incentives | Change Manager | Weeks 6-10 |
+| Resource unavailability at peak phase | Low | High | 3 | Resource reservation; backup staffing; vendor contingency | PMO | Immediate |
+| Regulatory compliance gap | Low | Critical | 3 | Compliance framework review; audit trail implementation; data residency confirmation | Compliance Officer | Week 2 |
+
+**Summary Risk Score**: 9/9 (HIGH RISK - requires mitigation and executive oversight)
+
+---
+
+## Affected Systems
+
+### System 1: SAP ECC 6.0 (Current)
+- **Impact Type**: Being replaced; data extracted and transformed
+- **Risk Level**: MEDIUM - Live data must be frozen during migration window
+- **Mitigation**: 
+  - Parallel run for 1-2 weeks to validate
+  - Clear cutover date communicated 30 days in advance
+  - Rollback plan tested and ready
+
+### System 2: Third-Party Legacy Accounting System
+- **Impact Type**: Real-time integration via APIs
+- **Risk Level**: MEDIUM - Integration complexity unknown
+- **Mitigation**:
+  - Proof-of-concept integration completed before migration
+  - Dedicated integration testing phase (2 weeks)
+  - Fallback to batch file interface if real-time not feasible
+
+### System 3: SAP Analytics Cloud (New)
+- **Impact Type**: Reporting platform replacement
+- **Risk Level**: LOW - Greenfield implementation
+- **Mitigation**:
+  - Staged reporting rollout (Finance first, then Supply Chain)
+  - Training for report consumers
+
+---
+
+## User Impact
+
+### User Group 1: Finance Department (50 users)
+- **Workflow Changes**: 
+  - Month-end close process redesigned (5 fewer manual steps)
+  - Real-time GL inquiry replaces daily batch reporting
+  - New approval workflow for journal entries
+- **Training Needs**: 2-day workshop; job aids; super-user support hotline
+- **Adoption Risk**: MEDIUM - Older demographic, slower to adopt
+- **Mitigation**: 
+  - Peer-to-peer mentoring program
+  - Extra support hotline for first 30 days
+  - Finance manager incentives for adoption metrics
+
+### User Group 2: Supply Chain (200 users)
+- **Workflow Changes**:
+  - Purchase order creation simplified (system-guided)
+  - Real-time inventory visibility (vs. batch updates)
+  - New planning interface with AI recommendations
+- **Training Needs**: 1-day workshop; online modules; sandbox practice
+- **Adoption Risk**: LOW - Younger demographic, tech-comfortable
+- **Mitigation**:
+  - Gamification of sandbox practice
+  - Early access for super-users (2 weeks before go-live)
+
+### User Group 3: Sales (150 users)
+- **Workflow Changes**:
+  - Order entry unchanged (same UI maintained)
+  - Backend credit check and fulfillment faster (2x)
+  - New analytics available for opportunity management
+- **Training Needs**: 0.5-day refresher; online module on new reports
+- **Adoption Risk**: LOW - Minimal workflow change
+- **Mitigation**:
+  - Communication focus on benefits (faster processing, better insights)
+
+---
+
+## Performance Considerations
+
+### Current State Volumes
+- Daily POs: 500
+- Daily Invoices: 200
+- Daily Sales Orders: 1,000
+- Master records: 500 customers, 10,000 materials
+
+### Growth Projections
+- Expected growth: 20% annually
+- Projected volumes (Year 3): 1,200 POs/day, 240 invoices/day, 1,200 orders/day
+
+### Performance Impact
+- Month-end close currently takes 8 hours (5 days calendar)
+- Target: 4 hours with cloud system automation
+- Estimated gain: 1 day faster close, improved accuracy
+
+### Optimization Strategy
+- HANA in-memory processing for reporting (10x faster)
+- Batch job optimization and parallelization
+- Index tuning for high-volume master data queries
+- API rate limiting and caching for integrations
+
+---
+
+## Data Considerations
+
+### Master Data Affected
+- **Customer Master**: 500 records; mapping to 3-way customer view (Bill-to, Ship-to, Payer)
+- **Material Master**: 10,000 records; valuation method conversion (MAP → FIFO)
+- **Vendor Master**: 1,500 records; payment terms normalization
+
+### Volume Impacts
+- 5-year transaction history: 250M line items (18GB in ECC, 2GB in HANA)
+- Analytics repository: New capability not previously available
+- Storage cost reduction: 60% on-premise storage vs. cloud-managed
+
+### Migration Approach
+1. Data quality cleansing (CHG-2026-002)
+2. Mapping tables creation (2 weeks)
+3. Test migration to dev/test (2 passes)
+4. Final production cutover migration (4-hour window)
+5. Post-migration reconciliation (3 days)
+```
+
+## Quality Gates
+
+✅ **Gate: Evidence Only** - Risks identified from requirement analysis or domain knowledge  
+✅ **Gate: Schema Compliance** - Output matches impact_analysis structure in output.schema.json  
+✅ **Gate: Explicit Unknowns** - Risks with unknown probability or impact are flagged  
+✅ **Gate: Risk Transparency** - Risks ranked by score and clearly prioritized  
+
+## Red Flags (Escalate to gap-question-generator)
+- Risk with unknown probability or impact (requires gap question)
+- Mitigation strategy that's not feasible (raises scope question)
+- User group adoption risk > MEDIUM without clear mitigation
+
+## Implementation Notes
+- Use 20-domain-knowledge.md for common risk patterns
+- Use 00-governance.md for risk tolerance matrix (1-3 = Low, 4-6 = Medium, 7-9 = High, 9+ = Critical)
+- Reference 30-architecture-decisions.md for architectural risks
+- Calculate summary risk score as average of all individual risk scores
+- Escalate to gap-question-generator if summary score > 6
+

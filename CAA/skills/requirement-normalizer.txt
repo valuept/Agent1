@@ -1,0 +1,125 @@
+# SKILL: requirement-normalizer
+
+## Purpose
+Validates, structures, and normalizes raw change requests into clear, unambiguous requirements with explicit in-scope and out-of-scope items.
+
+## Input
+- Raw requirement from schemas/input.schema.json
+- Context from memory/10-project-context.md
+- Templates from memory/50-templates.md
+
+## Process
+
+### Step 1: Requirement Validation
+- [ ] Title is specific and descriptive (not vague)
+- [ ] Description contains enough detail to understand the change
+- [ ] Business context explains WHY (not just WHAT)
+- [ ] At least one system or module is identified
+- [ ] If business drivers are missing, flag as UNKNOWN
+
+### Step 2: Scope Clarification
+- Explicitly separate IN SCOPE from OUT OF SCOPE
+- Identify implicit scope creep (e.g., "improve performance" needs definition)
+- List dependencies on other changes
+- Define system boundaries
+
+### Step 3: Acceptance Criteria Generation
+If not provided, generate specific, measurable criteria:
+- Functional criteria: "System X produces report Y with accuracy Z%"
+- Performance criteria: "Process completes in < N minutes"
+- Quality criteria: "Zero critical bugs in UAT"
+- User experience: "Average response time < N seconds"
+
+### Step 4: Structured Output
+
+```markdown
+# [Change ID] - [Title]
+
+## Normalized Requirement
+
+**Business Value**: [One sentence explaining business value]
+
+**Scope Summary**: [One paragraph of what will change]
+
+**In Scope**:
+- Item 1: [Specific description]
+- Item 2: [Specific description]
+
+**Out of Scope** (Explicitly excluded):
+- Item 1: (because: [reason])
+- Item 2: (because: [reason])
+
+**Dependencies Identified**:
+- Dependency 1: [Which change, why dependent]
+- Dependency 2: [Which change, why dependent]
+
+**Acceptance Criteria**:
+- [ ] Functional: [Specific, measurable criterion]
+- [ ] Performance: [Specific, measurable criterion]
+- [ ] Quality: [Specific, measurable criterion]
+- [ ] User Experience: [Specific, measurable criterion]
+
+**Known Unknowns**:
+- Unknown 1: [What we don't know yet]
+- Unknown 2: [What we don't know yet]
+```
+
+## Quality Gates
+
+✅ **Gate: Evidence Only** - Every statement is backed by the input or domain knowledge  
+✅ **Gate: Schema Compliance** - Output matches output.schema.json structure  
+✅ **Gate: Explicit Unknowns** - All gaps are explicitly stated  
+✅ **Gate: Clarity** - A new team member could understand the requirement  
+
+## Red Flags (Escalate to Gap-Question-Generator)
+- Vague language: "improve", "optimize", "enhance" without specifics
+- Conflicting requirements: "low cost" and "gold-standard solution"
+- Missing context: No business drivers or success metrics
+- Scope ambiguity: Impossible to determine what "done" means
+
+## Example Output
+
+```
+# CHG-2026-001 - Migrate to S/4HANA Cloud
+
+## Normalized Requirement
+
+**Business Value**: Reduce infrastructure costs by 40% and improve system availability from 99% to 99.9%
+
+**Scope Summary**: 
+Move from SAP ECC 6.0 on-premise to S/4HANA Cloud Public Edition. This includes financial modules (FI, CO), materials management (MM), and sales & distribution (SD), covering all 500+ users across Finance, Supply Chain, and Sales departments.
+
+**In Scope**:
+- FI, CO, MM, SD modules migration
+- Master data migration (500+ customers, 10,000+ materials)
+- Reporting solution migration to SAP Analytics Cloud
+- User training and cutover
+- Integration with existing non-SAP systems via SAP Cloud Integration
+
+**Out of Scope** (Explicitly excluded):
+- HR module (not in initial scope, planned for Phase 2 in 2027)
+- Historical data archival (keep on-premise for compliance)
+- Custom ABAP code rewrite (use ABAP Cloud where possible, but some legacy features may remain unsupported)
+
+**Dependencies Identified**:
+- Depends on: CHG-2026-002 (Data quality cleansing) - must complete before data migration
+- Blocks: CHG-2026-003 (Reporting enhancement) - cannot start until BI platform is ready
+
+**Acceptance Criteria**:
+- [ ] Functional: All daily transactions (POs, invoices, orders) process end-to-end in cloud
+- [ ] Performance: Average user response time < 2 seconds for standard queries
+- [ ] Quality: Zero critical data consistency issues identified in reconciliation
+- [ ] User Experience: 95% of users complete training and pass knowledge test
+
+**Known Unknowns**:
+- Unknown 1: Final licensing cost for SAP Cloud Services (awaiting SAP estimate)
+- Unknown 2: Performance impact of integrations with legacy systems (requires load testing)
+- Unknown 3: Custom code feasibility in ABAP Cloud (architecture review needed)
+```
+
+## Implementation Notes
+- Use memory/20-domain-knowledge.md for SAP module interactions
+- Reference memory/00-governance.md for scope classification
+- Apply memory/50-templates.md for output structure
+- Capture all unknowns - don't assume information
+

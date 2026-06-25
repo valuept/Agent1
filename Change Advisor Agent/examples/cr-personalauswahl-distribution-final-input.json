@@ -1,0 +1,27 @@
+{
+  "change_request": "Final approved CR v2.4 (Fachbereich sign-off 15.09.2025): In the SAP HCM APP workflow ZHR1 (ZEHR_RM_HR1), introduce a dedicated Personalauswahl process step for business field 02 (Distribution) only, inserted after step 'Personalsuche starten' (1600/instance 1) and before 'Warteschritt Recruiting' (1600/instance 2). The existing Personalvorschlag tab must be hidden in all steps for Distribution and reused/renamed as the editable Personalauswahl tab in the new step (all other tabs read-only). The Auftraggeber (hiring manager), determined via field ANFRD using existing SAP agent-determination rules, captures candidate data, sets mandatory-document radio buttons on a Dokumente tab, uploads documents on the Kommentar/Anhang tab, and sends the workflow to Recruiting; a blocking warning must appear on send if documents may be missing. Captured data and attachments must be carried into the Warteschritt Recruiting step so Recruiting can start ZHR2 coverage; Recruiting needs an 'an AG / Abaenderung' button to return the workflow for corrections. An 'Ueberpruefung MA' duplicate-person check (name + date of birth + social-insurance fragment) must be added in the new step and also in ZHR2 step 2015. In step 1000 for Distribution only, add fields on the Bezahlung tab: Zustellart (mandatory multi-select PKW/zu Fuss/Fahrrad/Moped) and Fuehrerschein (mandatory, dynamically derived from Zustellart), both shown read-only later in Recruiting step 1600. The goal is to prevent a second ZHR1 being raised for the same demand so time-to-hire and open-position counts are measured correctly.",
+  "project_context": "SAP HCM APP (ProcessBuilder) process optimization for the Distribution hiring flow, human-in-the-loop with mandatory approval and strict GDPR/data-protection controls. Affected systems: SAP HCM (PP2/KP2), ProcessBuilder (APP module), SAP authorizations; SuccessFactors and Recruiting remain out of scope for changes.",
+  "constraints": [
+    "Scope is strictly limited to Distribution (business field 02, P9110-ZZGFELD = 02); all other org units and the standard ZHR1 process remain unchanged.",
+    "No changes to SuccessFactors functions or dashboards and no document upload by hiring managers in SuccessFactors.",
+    "Recruiting must remain the only role that starts ZHR2 coverage; hiring managers cannot start ZHR2 themselves.",
+    "No new authorization role is created; existing roles are reused and only the agent-determination rules are adjusted for the new step.",
+    "Must satisfy GDPR (DSGVO) and personal-data works-agreement requirements: exclude third-party access, restrict access to authorized persons only, and send notifications only to responsible persons.",
+    "Must-have requirements REQ-01..REQ-07 and REQ-16..REQ-19 are the release scope; should-have and nice-to-have items (REQ-08..REQ-15, REQ-20..REQ-24) are secondary.",
+    "Output and artifacts must not contain personal data."
+  ],
+  "affected_objects": [
+    "SAP HCM APP workflow ZEHR_RM_HR1 (step 1600 instance 1 and instance 2)",
+    "New Personalauswahl process step and ANFRD-based agent determination",
+    "Personalvorschlag tab visibility logic (hidden for Distribution) and reuse as Personalauswahl tab",
+    "Dokumente tab with mandatory-document radio buttons and Kommentar/Anhang upload validation",
+    "Data and attachment handover into Warteschritt Recruiting plus 'an AG / Abaenderung' return loop",
+    "'Ueberpruefung MA' duplicate-person check in the new step and in ZHR2 step 2015",
+    "Step 1000 Bezahlung tab additions (Zustellart, Fuehrerschein) for Distribution",
+    "SAP agent-determination rules (e.g. rule 91000027 Recruiting, SFTYP recruiting responsibility) and authorization assignment"
+  ],
+  "target_timeline": "TBD by project governance; development freeze risks (LCP import transport stop, SWIFT soft-freeze) to be respected.",
+  "leanix_export": {
+    "enabled": false
+  }
+}
