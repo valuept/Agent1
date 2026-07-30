@@ -35,6 +35,8 @@ pytest
 
 This foundation is intentionally strict and extensible so downstream agents can add domain-specific reasoning without rewriting control-plane fundamentals.
 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
 # Agent1
 
 Agent1 is an **agent factory**: a zero-dependency Python framework (stdlib
