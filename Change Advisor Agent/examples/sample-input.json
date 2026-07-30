@@ -1,0 +1,14 @@
+{
+  "change_request": "Standardize intake for change requests and produce a structured advisory output with risks, open questions, steps, and test cases.",
+  "project_context": "Internal SAP consulting delivery team with human approval gate before implementation.",
+  "constraints": [
+    "No personal data in prompts",
+    "Output must follow schema",
+    "Human approval is mandatory"
+  ],
+  "affected_objects": [
+    "Advisory process",
+    "Review checklist"
+  ],
+  "target_timeline": "2 weeks"
+}

@@ -1,0 +1,412 @@
+# SKILL: testcase-designer
+
+## Purpose
+Creates comprehensive test cases that verify all acceptance criteria are met and all risks have been tested.
+
+## Input
+- Normalized requirement from requirement-normalizer
+- Impact analysis including risk matrix from impact-analyzer
+- Acceptance criteria from requirement-normalizer
+- Domain knowledge from memory/20-domain-knowledge.md
+
+## Process
+
+### Step 1: Test Coverage Planning
+
+Map acceptance criteria to test case categories:
+
+**Unit Tests** (Component-level):
+- Individual configuration validated
+- Custom code functions tested
+- Data transformations verified
+
+**Integration Tests** (System-to-system):
+- Interfaces working correctly
+- Master data mappings accurate
+- Real-time synchronization functional
+
+**System Tests** (End-to-end processes):
+- Complete business processes flow end-to-end
+- All system interactions validated
+- Performance meets requirements
+
+**User Acceptance Tests** (Business process):
+- Users can complete their daily work
+- Reports and dashboards work correctly
+- User workflows unchanged or improved
+
+**Regression Tests** (No breakage):
+- Existing unchanged functionality still works
+- Baseline report values unchanged
+- Historical data accessible
+
+**Performance Tests** (Load/stress):
+- Volume targets (500 POs/day, 10,000+ materials)
+- Response time SLAs met
+- Batch jobs complete within windows
+- Concurrent user load handled
+
+**Security Tests** (Protection):
+- Authorization controls work
+- Sensitive data masked appropriately
+- Audit trails logged
+- Encryption in place
+
+### Step 2: Test Case Generation
+
+For each acceptance criterion, generate 3-5 test cases covering:
+- **Happy path** (expected scenario)
+- **Edge cases** (boundary conditions)
+- **Error cases** (invalid input, system failures)
+- **Performance case** (high volume)
+
+**Template**:
+```
+## Test Case: [TC-ID] - [Title]
+
+**Type**: [Unit / Integration / System / UAT / Regression / Performance / Security]
+
+**Scenario**: [Brief description of business scenario]
+
+**Preconditions**:
+1. [System state required]
+2. [Data required]
+3. [Access level required]
+
+**Test Steps**:
+1. [Action 1]
+2. [Action 2]
+3. [Action 3]
+
+**Expected Result**:
+[What should happen if test passes]
+
+**Acceptance Criteria**:
+- [ ] Criterion 1
+- [ ] Criterion 2
+- [ ] Criterion 3
+
+**Risk Addressed**: [Which risk this test mitigates]
+
+**Notes**: [Special considerations, data setup, etc.]
+```
+
+### Step 3: Risk-Based Test Planning
+
+For each HIGH or CRITICAL risk from impact-analyzer:
+- Create specific test case to validate mitigation
+- Include stress/load scenarios if applicable
+- Define pass/fail criteria clearly
+
+### Step 4: Test Data Strategy
+
+Specify:
+- **Volume**: Production-like volume (e.g., 500 POs)
+- **Data Complexity**: Standard cases, edge cases, exceptions
+- **Data Lifecycle**: Creation, modification, archival
+- **Master Data**: Customer, material, vendor, GL account setup
+
+## Example Output
+
+```markdown
+# Test Cases for CHG-2026-001 - S/4HANA Migration
+
+## Test Case: TC-001 - Create Purchase Order (Happy Path)
+
+**Type**: System Test
+
+**Scenario**: Finance user creates a standard purchase order through the new cloud interface
+
+**Preconditions**:
+- Vendor master data migrated and verified
+- Material master data migrated
+- Purchasing organizational structure configured
+- User logged in with purchasing analyst role
+
+**Test Steps**:
+1. Navigate to Purchase Order (PO) creation in cloud system
+2. Enter vendor (search and select from migrated vendor master)
+3. Add line items (search and select from migrated material master)
+4. Enter quantity: 100 units
+5. System should auto-calculate price from vendor master
+6. Submit PO for approval
+
+**Expected Result**:
+- PO created with unique PO number
+- System sends approval notification to purchasing manager
+- PO status changes to "Pending Approval"
+- User receives confirmation message with PO number
+- Acknowledgment sent to vendor via email
+
+**Acceptance Criteria**:
+- [ ] PO number generated (sequential, from number range)
+- [ ] All line items saved correctly
+- [ ] Price pulled from vendor master (no manual entry)
+- [ ] Approval workflow triggered automatically
+- [ ] Vendor email contains correct PO details
+- [ ] Response time < 2 seconds
+
+**Risk Addressed**: 
+- Technical feasibility of cloud workflow (Prob: Med, Impact: Med, Score: 4)
+- User adoption of new interface (Prob: Med, Impact: Med, Score: 4)
+
+**Notes**: 
+- Use vendor master sample: "Vendor001" (migrated in Phase 1)
+- Use material: "MAT-500" (standard material)
+- Approval level set to 50,000 EUR threshold
+
+---
+
+## Test Case: TC-002 - PO Creation with Non-Standard Vendor
+
+**Type**: Integration Test
+
+**Scenario**: User attempts to create PO with vendor not in master data (edge case)
+
+**Preconditions**:
+- Vendor NOT present in migrated master data
+- User has "Create PO" authorization
+
+**Test Steps**:
+1. Attempt to create PO
+2. Search for non-existent vendor
+3. System should indicate "Vendor not found"
+4. User should have option to request new vendor setup
+5. PO creation blocked until valid vendor selected
+
+**Expected Result**:
+- System prevents PO creation with invalid vendor
+- User receives clear error message
+- Alternative path offered (create new vendor request)
+- Error logged for audit trail
+
+**Acceptance Criteria**:
+- [ ] Error message is user-friendly (not technical)
+- [ ] Vendor creation request submitted and tracked
+- [ ] PO not created with invalid data
+- [ ] No orphaned records in database
+- [ ] Audit log captures attempted vendor and user
+
+**Risk Addressed**:
+- Data migration data quality (Prob: Med, Impact: High, Score: 6)
+- User process interruption (Prob: Low, Impact: Med, Score: 2)
+
+**Notes**:
+- This tests data quality from migration (CHG-2026-002 dependency)
+
+---
+
+## Test Case: TC-003 - Batch Vendor Invoice Processing (Performance)
+
+**Type**: Performance Test
+
+**Scenario**: System processes 200 vendor invoices in daily batch job
+
+**Preconditions**:
+- System load is normal (production-like)
+- 200 sample invoices staged in input file
+- All vendors in master data
+- GL codes configured
+
+**Test Steps**:
+1. Execute daily invoice batch job
+2. Monitor system performance
+3. Record start time and end time
+4. Verify all 200 invoices processed
+5. Check accuracy of GL posting
+
+**Expected Result**:
+- Batch job completes in < 15 minutes
+- All 200 invoices successfully posted to GL
+- No timeouts or performance degradation
+- User response times remain < 2 seconds during batch
+
+**Acceptance Criteria**:
+- [ ] Batch completion time: 15 minutes or less
+- [ ] Success rate: 100% of invoices processed
+- [ ] Accuracy: All GL postings verified
+- [ ] System responsiveness: Dialog response times unaffected
+- [ ] Error handling: Failed invoices logged (if any)
+
+**Risk Addressed**:
+- Performance degradation (Prob: Med, Impact: High, Score: 6)
+- Month-end process delays (Prob: Med, Impact: High, Score: 6)
+
+**Notes**:
+- Run during peak load testing
+- Target: Month-end close should reduce from 8 hours to 4 hours
+- Use HANA monitoring to verify index usage
+
+---
+
+## Test Case: TC-004 - Invoice Approval Segregation of Duties
+
+**Type**: Security Test
+
+**Scenario**: User attempts to both create and approve their own invoice (SoD violation)
+
+**Preconditions**:
+- User "FIN-MGR-001" has creator role AND approver role in old system (current SoD violation)
+- New cloud system has corrected this with role separation
+
+**Test Steps**:
+1. Log in as FIN-MGR-001 with creator role
+2. Create an invoice
+3. Attempt to approve the same invoice
+4. System should block the action
+
+**Expected Result**:
+- Action blocked by system
+- Error message explains SoD violation
+- Approval workflow routes to different user
+- Audit log captures attempted violation
+
+**Acceptance Criteria**:
+- [ ] User cannot approve own transaction
+- [ ] Error message clear and actionable
+- [ ] Approval automatically escalated to peer reviewer
+- [ ] Audit trail complete
+- [ ] No workaround exists to bypass SoD
+
+**Risk Addressed**:
+- Compliance violation (Prob: Low, Impact: Critical, Score: 3)
+- Fraud prevention (Prob: Low, Impact: High, Score: 2)
+
+**Notes**:
+- This verifies governance framework requirement
+- Document evidence for SOX audit
+
+---
+
+## Test Case: TC-005 - Data Migration Reconciliation
+
+**Type**: System Test
+
+**Scenario**: Post-cutover reconciliation verifies all data migrated correctly
+
+**Preconditions**:
+- Migration from ECC to cloud completed
+- Data frozen during cutover window (4 hours)
+- Reconciliation reports prepared
+
+**Test Steps**:
+1. Extract customer count from old system: X customers
+2. Extract customer count from new system: Y customers
+3. Compare: X should equal Y
+4. Repeat for materials, vendors, GL accounts, open invoices
+5. Generate variance report for any differences
+6. Investigate root cause for each variance
+
+**Expected Result**:
+- Customer count matches: 500 = 500
+- Material count matches: 10,000 = 10,000
+- Vendor count matches: 1,500 = 1,500
+- GL account structure intact
+- Open invoice count matches (within 1%)
+- Variances explained and documented
+- No data lost or corrupted
+
+**Acceptance Criteria**:
+- [ ] Master data count matches within 0% variance
+- [ ] Transaction data matches within 1% variance
+- [ ] GL balances reconciled (debit = credit)
+- [ ] Year-to-date figures match old system
+- [ ] All variances documented with root cause
+- [ ] Sign-off from Finance Director
+
+**Risk Addressed**:
+- Data migration quality (Prob: Med, Impact: High, Score: 6)
+- Compliance violations from bad data (Prob: Low, Impact: Critical, Score: 3)
+
+**Notes**:
+- This is PRIMARY evidence for cutover sign-off
+- Must complete within 24 hours of go-live
+- Run by Finance + IT jointly
+
+---
+
+## Test Case: TC-006 - Integration with Legacy Accounting System (Real-time)
+
+**Type**: Integration Test
+
+**Scenario**: Cloud system sends GL posting to legacy accounting system in real-time
+
+**Preconditions**:
+- Legacy system API endpoint tested and available
+- Integration credentials configured
+- Network connectivity confirmed
+
+**Test Steps**:
+1. Create invoice in cloud system for GL account 4000 (Revenue)
+2. System should call legacy accounting API
+3. Monitor API call response time
+4. Verify GL posting appears in legacy system within 5 seconds
+5. Confirm amount and account match
+
+**Expected Result**:
+- API call succeeds within 5 seconds
+- GL posting appears in legacy system
+- Amount and account correct
+- No duplicate postings
+- Error handling works if API fails
+
+**Acceptance Criteria**:
+- [ ] Real-time API response time: < 5 seconds
+- [ ] 100% success rate for normal transactions
+- [ ] Error handling: Failed posts retried (up to 3 times)
+- [ ] Fallback: If API fails, manual workaround documented
+- [ ] Audit trail: All API calls logged
+
+**Risk Addressed**:
+- Integration failures (Prob: Med, Impact: Med, Score: 4)
+- Data inconsistency between systems (Prob: Med, Impact: High, Score: 6)
+- Performance impact (Prob: Med, Impact: High, Score: 6)
+
+**Notes**:
+- This integration is CRITICAL - test thoroughly
+- Consider load testing: 200 invoices/hour
+- Have fallback batch process ready if real-time fails
+
+---
+
+## Test Schedule
+
+| Phase | Test Type | Duration | Responsible | Approval |
+|-------|-----------|----------|-------------|----------|
+| Development | Unit | 1 week | Dev Lead | Tech Lead |
+| System Test | Integration + System | 2 weeks | QA Lead | QA Manager |
+| UAT | User Acceptance | 1 week | Business Users | Process Owner |
+| Performance | Load/Stress | 3 days | Performance Lead | CIO |
+| Regression | Unchanged functionality | 3 days | QA Lead | QA Manager |
+| Security | Authorization + Audit | 2 days | Security Officer | CISO |
+| Cutover Test | End-to-end simulation | 1 day | Project Lead | Sponsor |
+
+**Total Test Effort**: ~80 hours across 3 weeks
+
+**Go-Live Criteria**:
+- ✅ All HIGH priority test cases passed
+- ✅ No CRITICAL or blocking issues open
+- ✅ Performance tests meet SLA targets
+- ✅ Data migration reconciliation signed-off
+- ✅ User acceptance sign-off obtained
+```
+
+## Quality Gates
+
+✅ **Gate: Evidence Only** - Each test case traces to specific acceptance criterion or risk  
+✅ **Gate: Schema Compliance** - Output matches test_cases structure in output.schema.json  
+✅ **Gate: Explicit Unknowns** - Gaps in test coverage are explicitly stated  
+✅ **Gate: Risk Transparency** - Each test addresses specific identified risk  
+
+## Red Flags (Escalate)
+- Acceptance criterion with no test case (incomplete coverage)
+- Risk identified in impact-analyzer with no corresponding test (gap)
+- Performance test not covering peak load scenario
+
+## Implementation Notes
+- Use acceptance criteria from normalized requirement
+- Reference risk matrix from impact-analyzer to prioritize tests
+- Create test data strategy based on volume projections
+- Define clear pass/fail criteria for each test
+- Test effort estimate: 15-25% of total implementation effort
+

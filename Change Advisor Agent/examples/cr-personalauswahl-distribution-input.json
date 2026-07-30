@@ -1,0 +1,23 @@
+{
+  "change_request": "Implement a dedicated person-selection step in SAP HCM APP workflow ZHR1 for business field 02 (Distribution), disable the existing Personalvorschlag tab in Distribution to prevent duplicate staffing requests, and ensure applicant data plus mandatory hiring documents are captured and transferred to Recruiting without starting a second ZHR1.",
+  "project_context": "SAP HCM APP process optimization for Distribution hiring flow with mandatory human approval and strict data protection controls.",
+  "constraints": [
+    "Release 1 includes only must-have requirements (REQ-01..REQ-07 and REQ-16..REQ-19).",
+    "Scope is limited to Distribution (business field 02); all other areas remain unchanged.",
+    "No changes to SuccessFactors core functionality in Release 1.",
+    "Workflow must preserve Recruiting ownership to start ZHR2 coverage.",
+    "Output and artifacts must avoid personal data."
+  ],
+  "affected_objects": [
+    "SAP HCM APP workflow ZEHR_RM_HR1",
+    "ZHR1 process step routing",
+    "Personalauswahl form/tab behavior",
+    "Personalvorschlag tab visibility logic",
+    "Recruiting handover data mapping",
+    "Authorization and notification controls"
+  ],
+  "target_timeline": "TBD by project governance",
+  "leanix_export": {
+    "enabled": false
+  }
+}

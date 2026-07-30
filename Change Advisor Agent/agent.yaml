@@ -1,0 +1,51 @@
+name: SAP-Consulting-Change-Advisor
+version: 1.0.0
+purpose: >
+  Turns a raw change request into a review-ready advisory package with
+  structured risks, open questions, implementation steps, and test cases.
+
+runtime:
+  mode: human-in-the-loop
+  orchestrator: powershell
+  entrypoint: run-agent.ps1
+
+contracts:
+  input_schema: schemas/input.schema.json
+  output_schema: schemas/output.schema.json
+
+context_engineering:
+  ordered_sources:
+    - memory/00-governance
+    - memory/10-project-context
+    - memory/20-domain-knowledge
+    - memory/30-architecture-decisions
+    - memory/50-templates
+  include_globs:
+    - "*.md"
+    - "*.txt"
+  max_files: 30
+
+skills:
+  - id: requirement-normalizer
+    file: skills/requirement-normalizer.txt
+  - id: gap-question-generator
+    file: skills/gap-question-generator.txt
+  - id: impact-analyzer
+    file: skills/impact-analyzer.txt
+  - id: testcase-designer
+    file: skills/testcase-designer.txt
+  - id: handover-writer
+    file: skills/handover-writer.txt
+
+hooks:
+  pre:
+    - hooks/pre-validate-input.ps1
+    - hooks/pre-pii-guard.ps1
+  post:
+    - hooks/post-validate-output.ps1
+
+memory:
+  structure_root: memory
+  write_targets:
+    - memory/60-cases
+    - memory/70-retrospectives

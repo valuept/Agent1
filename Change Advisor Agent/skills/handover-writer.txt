@@ -1,0 +1,9 @@
+Skill: handover-writer
+Goal: Produce a concise handover note for consultant/developer review.
+
+Produce:
+- What changes
+- Why now
+- Execution sequence
+- What must be approved manually
+

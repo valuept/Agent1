@@ -1,0 +1,311 @@
+# SKILL: compliance-checker
+
+## Purpose
+Validates the proposed change against SAP governance frameworks and regulatory requirements to ensure compliance or identify mitigation strategies.
+
+## Input
+- Normalized requirement from requirement-normalizer
+- Business context from input schema
+- Governance policies from memory/00-governance.md
+- Domain knowledge from memory/20-domain-knowledge.md
+- Open questions from gap-question-generator
+
+## Process
+
+### Step 1: Applicable Framework Identification
+
+Determine which compliance frameworks apply:
+
+**Mandatory Frameworks**:
+- SAP Best Practices (always applies)
+- Governance & Change Control (always applies)
+- Security & Data Protection (always applies)
+
+**Context-Dependent Frameworks**:
+- GDPR: If personal data is processed
+- SOX: If financial systems are affected
+- GxP (FDA): If regulated manufacturing
+- HIPAA: If healthcare data
+- ISO 27001: If security enhancement requested
+
+### Step 2: Framework Compliance Assessment
+
+For each applicable framework:
+
+**Check 1**: Architecture Alignment
+- Does proposed solution align with SAP best practices for this domain?
+- Does it follow recommended patterns from memory/20-domain-knowledge.md?
+- Are there design decisions conflicting with governance?
+
+**Check 2**: Change Control Alignment
+- Does this require CAB review per memory/00-governance.md?
+- Is scope classification (Standard/Significant/Major) correct?
+- Are all go/no-go criteria from governance framework met?
+
+**Check 3**: Data & Security
+- Does this require data classification review?
+- Are PII, PHI, or sensitive financial data affected?
+- Does authentication/authorization align with security policies?
+- Is encryption required and implemented?
+
+**Check 4**: Audit & Compliance
+- Are audit trails required for this change?
+- Does this require regulatory reporting (SOX, GDPR)?
+- Are segregation of duties (SoD) conflicts possible?
+
+**Check 5**: Performance & Availability
+- Does this align with SLA requirements?
+- Is resilience/redundancy adequate?
+- Are backup/disaster recovery plans updated?
+
+### Step 3: Compliance Verdict
+
+For each check:
+- **Status**: Compliant / Non-Compliant / Requires Review / N/A
+- **Details**: What was verified and result
+- **Required Evidence**: Documentation needed for sign-off
+- **Action Items**: If non-compliant, remediation steps with owner and deadline
+
+### Step 4: Risk Summary
+
+- **Compliance Risk Score**: Low (0-1 issues) / Medium (2-3 issues) / High (4+ issues)
+- **Blockers**: Any compliance issues that must be resolved before go-live
+- **Conditionals**: Issues that can be mitigated with additional controls
+- **Recommendations**: Best practices that improve robustness
+
+## Example Output
+
+```markdown
+# Compliance Checks for CHG-2026-001
+
+## Framework 1: SAP Best Practices (Financial Management)
+
+**Check**: SAP standard financial close process adherence
+
+**Status**: ✅ COMPLIANT
+
+**Details**: Proposed FI configuration follows SAP standard close process including accrual/deferral automation, period-end cutoff procedures, and balance verification steps. No deviations from SAP template.
+
+**Required Evidence**: 
+- [ ] FI configuration document signed by Finance Director
+- [ ] Comparison to SAP Financial Close template (in SAP IMG)
+- [ ] GL account structure review by external audit firm
+
+**Action Items**: None
+
+---
+
+## Framework 2: Change Control & Governance
+
+**Check**: Scope classification and CAB review requirements
+
+**Status**: ⚠️  REQUIRES REVIEW
+
+**Details**: 
+- Estimated effort: 400-600 hours (falls under MAJOR scope per governance)
+- Systems affected: 3 (ECC → S/4HANA, integrations with legacy systems)
+- Cross-department impact: 500+ users across Finance, Supply Chain, Sales
+- Governance policy requires: Executive sponsor sign-off, CAB review, 30-day change window communication
+
+**Required Evidence**:
+- [ ] Executive sponsor letter confirming business case and budget
+- [ ] CAB pre-review meeting scheduled (minimum 4 weeks before cutover)
+- [ ] Stakeholder communication plan completed
+- [ ] Risk mitigation plan approved by CAB
+
+**Action Items**:
+- [OWNER: Project Sponsor] Schedule CAB pre-review meeting by [DATE]
+- [OWNER: Project Manager] Prepare CAB submission package by [DATE]
+- [OWNER: Communications] Execute 30-day advance notice by [DATE]
+
+---
+
+## Framework 3: Security & Data Protection
+
+**Check 1**: Data Classification & Sensitivity
+
+**Status**: ⚠️  REQUIRES REVIEW
+
+**Details**:
+- Proposed cloud environment processes: Customer master data, vendor master data, invoice data (Financial PII risk)
+- Current state: On-premise, SAP security perimeter
+- New state: SAP cloud, vendor-managed security
+
+Questions requiring review:
+- Are all data elements classified for sensitivity?
+- Are retention policies aligned with cloud provider's defaults?
+- Is data residency requirement met by public cloud deployment?
+
+**Required Evidence**:
+- [ ] Data classification matrix (all fields identified as Public/Internal/Confidential/Restricted)
+- [ ] Data residency compliance document (EU data stays in EU datacenters)
+- [ ] Encryption-in-transit and encryption-at-rest confirmation
+- [ ] Vendor NDA and security audit results
+
+**Action Items**:
+- [OWNER: Data Governance] Complete data classification by [DATE]
+- [OWNER: Compliance] Verify data residency with SAP cloud provider by [DATE]
+- [OWNER: Security] Review SAP Cloud security audit results by [DATE]
+
+**Check 2**: Authentication & Authorization
+
+**Status**: ✅ COMPLIANT
+
+**Details**: 
+- Proposed: SAP cloud will use company's Azure Active Directory (AAD) for SSO
+- Current: SAP Users managed locally in ECC
+- Migration: User sync from AD to SAP Cloud Identity Services
+
+Verification: Azure AD integration for SAP cloud is pre-certified and uses OAuth 2.0 standard protocol. No custom authentication code required.
+
+**Required Evidence**:
+- [ ] Azure AD connector configuration tested
+- [ ] User sync mapping rules validated
+- [ ] Initial user load test completed (500+ users)
+
+**Action Items**: None - verified during proof-of-concept
+
+**Check 3**: Segregation of Duties (SoD)
+
+**Status**: ⚠️  NON-COMPLIANT - REQUIRES REMEDIATION
+
+**Details**:
+- Current state: Finance user "FIN-MGR-001" has authority to create invoices AND approve invoices (SoD violation)
+- Proposed state: Cloud system has stronger SoD controls, but configuration must be set correctly
+
+This is not new - it's a governance gap in current system. Cloud migration is an opportunity to fix.
+
+**Required Evidence**:
+- [ ] Current SoD violation report with business justification
+- [ ] Cloud security configuration preventing FIN-MGR-001 from approving own invoices
+- [ ] Finance process change to separate approvers
+- [ ] Audit firm sign-off on remediated SoD
+
+**Action Items**:
+- [OWNER: Finance Director] Approve SoD remediation process change by [DATE]
+- [OWNER: SAP Admin] Configure cloud system SoD controls by [DATE]
+- [OWNER: Internal Audit] Review and sign-off on SoD compliance by [DATE]
+
+---
+
+## Framework 4: GDPR Compliance (Personal Data)
+
+**Applicable**: YES - Customer master data contains names, email addresses, addresses
+
+**Check 1**: Data Subject Rights
+
+**Status**: ⚠️  REQUIRES REVIEW
+
+**Details**:
+- GDPR requires "right to be forgotten" - ability to delete personal data
+- SAP cloud must support data deletion without breaking transactional integrity
+- Questions: How do we handle deletion requests for customers with historical orders?
+
+**Required Evidence**:
+- [ ] SAP cloud data deletion capability documented
+- [ ] Retention policy defined for customer master (keep after deletion? For how long?)
+- [ ] Legal review on retention vs. right-to-be-forgotten balance
+- [ ] Deletion procedure tested with sample data
+
+**Action Items**:
+- [OWNER: Legal] Clarify retention requirements per GDPR and local law by [DATE]
+- [OWNER: SAP Admin] Test data deletion capability in cloud system by [DATE]
+- [OWNER: DPO] Approve data deletion procedures by [DATE]
+
+**Check 2**: Data Processing Agreement (DPA)
+
+**Status**: ⚠️  REQUIRES REVIEW
+
+**Details**:
+- GDPR requires Data Processing Agreement with SAP (cloud provider)
+- Current state: On-premise ECC, so DPA not required
+- New state: Cloud = processor relationship requiring formal DPA
+
+**Required Evidence**:
+- [ ] SAP Data Processing Agreement obtained and reviewed
+- [ ] Legal review of DPA terms
+- [ ] Approval from Data Protection Officer (DPO)
+
+**Action Items**:
+- [OWNER: Procurement] Obtain SAP DPA by [DATE]
+- [OWNER: Legal] Review DPA and provide recommendations by [DATE]
+- [OWNER: DPO] Approve DPA by [DATE]
+
+---
+
+## Framework 5: SOX Compliance (Financial Controls)
+
+**Applicable**: YES - Financial systems (FI, CO) affected
+
+**Check**: IT General Controls (ITGCs)
+
+**Status**: ⚠️  REQUIRES REVIEW
+
+**Details**:
+- SOX requires documented IT controls for financial systems
+- Cloud migration introduces new control points (vendor access, updates, disaster recovery)
+- Current on-premise controls must be replaced with cloud equivalents
+
+Verification points:
+- [ ] Change management controls (CAB review)
+- [ ] Access controls (user provisioning/deprovisioning)
+- [ ] Segregation of duties (financial transactions)
+- [ ] System availability & disaster recovery
+- [ ] Audit logging (transaction audit trail)
+
+**Required Evidence**:
+- [ ] SOX IT controls gap analysis (on-premise vs. cloud)
+- [ ] Cloud system control documentation from SAP
+- [ ] External audit firm review of cloud IT controls
+- [ ] Remediation plan for any control gaps
+- [ ] Test evidence that controls operate as designed
+
+**Action Items**:
+- [OWNER: Internal Audit] Complete SOX IT controls gap analysis by [DATE]
+- [OWNER: External Auditor] Review cloud IT controls by [DATE]
+- [OWNER: SAP Admin] Implement compensating controls if gaps identified by [DATE]
+- [OWNER: Internal Audit] Perform control testing by [DATE]
+
+---
+
+## Compliance Summary
+
+| Framework | Status | Risk Level | Blocker? | Owner |
+|-----------|--------|-----------|----------|-------|
+| SAP Best Practices | ✅ Compliant | Low | No | Finance Director |
+| Change Control | ⚠️ Requires Review | Medium | Conditional | Project Manager |
+| Data Classification | ⚠️ Requires Review | Medium | Conditional | Data Governance |
+| GDPR Compliance | ⚠️ Requires Review | Medium | Conditional | Legal/DPO |
+| SOX Compliance | ⚠️ Requires Review | Medium | Conditional | Internal Audit |
+
+**Overall Compliance Risk**: MEDIUM - 4 frameworks require review, but no show-stopper blockers
+
+**Go/No-Go Impact**: CONDITIONAL GO - All "Requires Review" items must be resolved before cutover
+
+**Sign-Off Required From**:
+- [ ] Finance Director (SAP best practices)
+- [ ] Project Sponsor (Governance/CAB)
+- [ ] Chief Information Security Officer (Data/GDPR)
+- [ ] General Counsel (Legal/SOX)
+- [ ] Chief Audit Officer (SOX compliance)
+```
+
+## Quality Gates
+
+✅ **Gate: Evidence Only** - Each compliance check references specific governance policy or regulatory requirement  
+✅ **Gate: Schema Compliance** - Output matches compliance_checks structure in output.schema.json  
+✅ **Gate: Explicit Unknowns** - All compliance gaps are explicitly stated as "Requires Review"  
+✅ **Gate: Risk Transparency** - Compliance risks are clearly ranked with owners and deadlines  
+
+## Red Flags (Escalate to gap-question-generator)
+- Compliance framework applies but no assessment provided (incomplete)
+- Compliance violation with no remediation path identified (show-stopper risk)
+- Required evidence not obtainable before target cutover date
+
+## Implementation Notes
+- Use 00-governance.md scope classification to determine change control requirements
+- Reference industry standards (GDPR, SOX, GxP) for applicable frameworks
+- Identify sign-off owners from stakeholder list in 10-project-context.md
+- Mark items "REQUIRES REVIEW" if uncertainty exists - don't assume compliance
+- Set specific deadlines for remediation actions - these block go-live
+
