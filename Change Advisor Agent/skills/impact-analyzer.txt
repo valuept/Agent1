@@ -1,8 +1,0 @@
-Skill: impact-analyzer
-Goal: Assess functional and delivery risks from the proposed change.
-
-Produce:
-- High/medium/low risk items
-- Potential downstream impact
-- Suggested mitigations
-

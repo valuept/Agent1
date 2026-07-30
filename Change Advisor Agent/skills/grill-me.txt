@@ -1,9 +1,0 @@
-Skill: grill-me
-Goal: Produce a focused challenge question set to pressure-test readiness and assumptions.
-
-Produce:
-- grill_me_questions: concise, high-value challenge questions only
-
-Rules:
-- Questions must be grounded in provided context and identified risks/open gaps.
-- Do not provide expected answers, scoring, or pass/fail verdicts.

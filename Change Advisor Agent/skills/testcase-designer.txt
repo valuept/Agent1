@@ -1,9 +1,0 @@
-Skill: testcase-designer
-Goal: Create practical test cases for confidence before release.
-
-Produce:
-- Happy path tests
-- Edge case tests
-- Failure mode tests
-- Expected results per test
-

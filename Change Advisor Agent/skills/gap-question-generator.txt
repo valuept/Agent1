@@ -1,8 +1,0 @@
-Skill: gap-question-generator
-Goal: Identify missing information that blocks safe implementation.
-
-Produce:
-- Ranked open questions
-- Why each question matters
-- Impact if unanswered
-
