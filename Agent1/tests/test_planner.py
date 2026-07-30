@@ -1,5 +1,5 @@
-from agent0.contracts import TaskSpec
-from agent0.planner import BaselinePlanner
+from agent1.contracts import TaskSpec
+from agent1.planner import BaselinePlanner
 
 
 def test_planner_returns_standard_step_order() -> None:

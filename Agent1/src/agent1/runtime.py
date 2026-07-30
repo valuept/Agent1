@@ -11,7 +11,7 @@ from .policies import PolicyEngine
 
 
 @dataclass(slots=True)
-class Agent0Runtime:
+class Agent1Runtime:
     config: AgentConfig
     planner: BaselinePlanner
     executor: StepExecutor
@@ -19,7 +19,7 @@ class Agent0Runtime:
     memory: MemoryStore
 
     @classmethod
-    def default(cls, config: AgentConfig | None = None) -> "Agent0Runtime":
+    def default(cls, config: AgentConfig | None = None) -> "Agent1Runtime":
         effective_config = config or AgentConfig.from_env()
         return cls(
             config=effective_config,

@@ -2,12 +2,12 @@
 
 This repository contains two agent frameworks and their tooling:
 
-- **Agent0** (`Agent0/`) — Python-based agent foundation (installable package)
+- **Agent1** (`Agent1/`) — Python-based agent foundation (installable package)
 - **Change Advisor Agent / CAA** (`Change Advisor Agent/`, `CAA/`) — PowerShell-orchestrated SAP advisory agents
 
 ---
 
-## Agent0 — Python Package
+## Agent1 — Python Package
 
 ### Commands
 
@@ -18,7 +18,7 @@ python -m venv .venv
 pip install -e .[dev]           # installs pytest
 
 # Run a task
-agent0 run --objective "..." --constraint "..." --acceptance-criterion "..."
+agent1 run --objective "..." --constraint "..." --acceptance-criterion "..."
 
 # Tests
 pytest                          # all tests
@@ -27,7 +27,7 @@ pytest tests/test_runtime.py    # single file
 
 ### Architecture
 
-`Agent0Runtime` wires together five components — call `Agent0Runtime.default()` to get one with env-based config:
+`Agent1Runtime` wires together five components — call `Agent1Runtime.default()` to get one with env-based config:
 
 ```
 TaskSpec → BaselinePlanner.create_plan() → Plan (4 fixed steps)
@@ -39,15 +39,15 @@ TaskSpec → BaselinePlanner.create_plan() → Plan (4 fixed steps)
 
 Fixed step sequence (ids): `analyze-scope` → `design-approach` → `implement-solution` → `verify-outcome`, each with a `kind` (`analysis`, `design`, `implementation`, `verification`).
 
-- **`contracts.md` / `tools.md`** in `src/agent0/` — **these are Python source files with `.md` extension**, not documentation. Edit them like `.py` files.
-- **`builder.py`** — `AgentBuilder.build(AgentBlueprint)` creates a fully wired `Agent0Runtime` for a named domain; extend `blocked_command_patterns` (don't replace) per blueprint.
+- **`contracts.md` / `tools.md`** in `src/agent1/` — **these are Python source files with `.md` extension**, not documentation. Edit them like `.py` files.
+- **`builder.py`** — `AgentBuilder.build(AgentBlueprint)` creates a fully wired `Agent1Runtime` for a named domain; extend `blocked_command_patterns` (don't replace) per blueprint.
 - **`policies.py`** — `PolicyEngine` blocks commands via regex patterns; default list covers `rm -rf`, `del /f`, `format`, `git reset --hard`.
-- Config via env vars: `AGENT0_MODEL`, `AGENT0_MAX_ITERATIONS`, `AGENT0_STRICT_MODE`, `AGENT0_MEMORY_PATH`, `AGENT0_COMMAND_TIMEOUT` — `AgentConfig.from_env()` is the canonical factory.
+- Config via env vars: `AGENT1_MODEL`, `AGENT1_MAX_ITERATIONS`, `AGENT1_STRICT_MODE`, `AGENT1_MEMORY_PATH`, `AGENT1_COMMAND_TIMEOUT` — `AgentConfig.from_env()` is the canonical factory.
 
 ### Key conventions
 
 - All modules use `from __future__ import annotations` and `@dataclass(slots=True)`. No `__dict__`, no monkey-patching.
-- Memory is append-only JSONL at `.agent0/memory.jsonl` (blueprint-named sibling for variants). Never truncate; read via `MemoryStore.load_recent(limit)`.
+- Memory is append-only JSONL at `.agent1/memory.jsonl` (blueprint-named sibling for variants). Never truncate; read via `MemoryStore.load_recent(limit)`.
 - Custom step logic: implement `StepHandler` protocol (`handle(task, step) -> StepResult`) and register on `StepExecutor.handlers[kind]`. `DefaultStepHandler` always succeeds — add real handlers before shipping domain logic.
 - `LocalCommandTool` uses `shlex.split(posix=False)` (Windows-safe) and never shells out with `shell=True`.
 - Tests use `tmp_path` fixture for memory isolation; no mocking frameworks.

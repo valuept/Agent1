@@ -7,7 +7,7 @@ from .executor import StepExecutor
 from .memory import MemoryStore
 from .planner import BaselinePlanner
 from .policies import PolicyEngine
-from .runtime import Agent0Runtime
+from .runtime import Agent1Runtime
 
 
 @dataclass(slots=True)
@@ -23,7 +23,7 @@ class AgentBuilder:
     def __init__(self, base_config: AgentConfig | None = None) -> None:
         self.base_config = base_config or AgentConfig.from_env()
 
-    def build(self, blueprint: AgentBlueprint) -> Agent0Runtime:
+    def build(self, blueprint: AgentBlueprint) -> Agent1Runtime:
         config = AgentConfig(
             model_name=self.base_config.model_name,
             max_iterations=blueprint.max_iterations or self.base_config.max_iterations,
@@ -34,7 +34,7 @@ class AgentBuilder:
         policies = PolicyEngine()
         if blueprint.blocked_command_patterns:
             policies.blocked_command_patterns.extend(blueprint.blocked_command_patterns)
-        return Agent0Runtime(
+        return Agent1Runtime(
             config=config,
             planner=BaselinePlanner(),
             executor=StepExecutor(),

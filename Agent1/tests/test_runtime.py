@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from agent0.config import AgentConfig
-from agent0.contracts import TaskSpec
-from agent0.runtime import Agent0Runtime
+from agent1.config import AgentConfig
+from agent1.contracts import TaskSpec
+from agent1.runtime import Agent1Runtime
 
 
 def test_runtime_executes_full_plan(tmp_path: Path) -> None:
     config = AgentConfig(memory_path=tmp_path / "memory.jsonl")
-    runtime = Agent0Runtime.default(config=config)
+    runtime = Agent1Runtime.default(config=config)
     result = runtime.run(
         TaskSpec(
             objective="Create baseline standards for deployment automation",

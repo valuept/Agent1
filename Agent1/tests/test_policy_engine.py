@@ -1,4 +1,4 @@
-from agent0.policies import PolicyEngine
+from agent1.policies import PolicyEngine
 
 
 def test_policy_blocks_dangerous_command() -> None:

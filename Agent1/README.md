@@ -1,6 +1,6 @@
-# Agent0
+# Agent1
 
-Agent0 is a production-oriented foundation for building specialized software agents that can operate in demanding engineering environments.
+Agent1 is a production-oriented foundation for building specialized software agents that can operate in demanding engineering environments.
 
 ## What this baseline provides
 
@@ -18,19 +18,19 @@ Agent0 is a production-oriented foundation for building specialized software age
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e .[dev]
-agent0 run --objective "Design a deployment pipeline for service X"
+agent1 run --objective "Design a deployment pipeline for service X"
 pytest
 ```
 
 ## Core architecture
 
-- `agent0.contracts` - shared dataclasses and protocols
-- `agent0.planner` - base planning strategy
-- `agent0.executor` - step execution orchestration
-- `agent0.policies` - policy engine and safety checks
-- `agent0.memory` - persisted run memory store
-- `agent0.runtime` - main Agent0 runtime loop
-- `agent0.builder` - factory for creating specialized agents
-- `agent0.tools` - tool interface and local command execution
+- `agent1.contracts` - shared dataclasses and protocols
+- `agent1.planner` - base planning strategy
+- `agent1.executor` - step execution orchestration
+- `agent1.policies` - policy engine and safety checks
+- `agent1.memory` - persisted run memory store
+- `agent1.runtime` - main Agent1 runtime loop
+- `agent1.builder` - factory for creating specialized agents
+- `agent1.tools` - tool interface and local command execution
 
 This foundation is intentionally strict and extensible so downstream agents can add domain-specific reasoning without rewriting control-plane fundamentals.

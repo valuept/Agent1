@@ -10,12 +10,12 @@ Change Advisor Agent/artifacts/*.txt
 Change Advisor Agent/artifacts/*.md
 
 # Python
-Agent0/__pycache__/
-Agent0/.venv/
-Agent0/*.egg-info/
-Agent0/dist/
-Agent0/.pytest_cache/
-Agent0/src/**/__pycache__/
+Agent1/__pycache__/
+Agent1/.venv/
+Agent1/*.egg-info/
+Agent1/dist/
+Agent1/.pytest_cache/
+Agent1/src/**/__pycache__/
 
 # OS
 .DS_Store

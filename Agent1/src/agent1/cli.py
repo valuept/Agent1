@@ -5,14 +5,14 @@ import json
 from dataclasses import asdict
 
 from .contracts import TaskSpec
-from .runtime import Agent0Runtime
+from .runtime import Agent1Runtime
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="agent0", description="Agent0 runtime CLI")
+    parser = argparse.ArgumentParser(prog="agent1", description="Agent1 runtime CLI")
     subcommands = parser.add_subparsers(dest="command", required=True)
 
-    run_parser = subcommands.add_parser("run", help="Execute a task with Agent0")
+    run_parser = subcommands.add_parser("run", help="Execute a task with Agent1")
     run_parser.add_argument("--objective", required=True, help="Task objective")
     run_parser.add_argument(
         "--constraint",
@@ -34,7 +34,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "run":
-        runtime = Agent0Runtime.default()
+        runtime = Agent1Runtime.default()
         task = TaskSpec(
             objective=args.objective,
             constraints=args.constraint,
