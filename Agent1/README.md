@@ -1,6 +1,6 @@
 # Agent0
 
-Agent1 is a production-oriented foundation for building specialized software agents that can operate in demanding engineering environments.
+Agent0 is a production-oriented foundation for building specialized software agents that can operate in demanding engineering environments.
 
 ## What this baseline provides
 
