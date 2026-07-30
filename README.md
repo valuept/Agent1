@@ -17,11 +17,11 @@ python -m venv .venv
 pip install -e .[dev]
 pytest
 
-agent0 new my-agent --purpose "Advise on change requests"
-agent0 test my-agent          # conformance suite + scaffolded test cases
-agent0 run my-agent --input my-agent/tests/inputs/example.json
-agent0 update . --all         # fleet-refresh scaffold files from templates
-agent0 list .
+agent1 new my-agent --purpose "Advise on change requests"
+agent1 test my-agent          # conformance suite + scaffolded test cases
+agent1 run my-agent --input my-agent/tests/inputs/example.json
+agent1 update . --all         # fleet-refresh scaffold files from templates
+agent1 list .
 ```
 
 ## Modules (5 files)
