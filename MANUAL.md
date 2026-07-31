@@ -27,7 +27,15 @@ building disciplined, auditable software agents:
 
 ## 1. Agent0 (`Agent0/`, v0.1.0)
 
-### 1.1 Overview
+### 1.1 Role definition
+
+> **Role:** Deterministic control-plane for running a coding task through a
+> fixed, policy-guarded, four-phase loop and recording what happened. Agent0
+> is a **harness that disciplines execution**, not a code generator — the
+> actual "thinking" per phase is delegated to a pluggable `StepHandler`, and
+> the one shipped (`DefaultStepHandler`) does no real work (see §1.6).
+
+### 1.2 Overview
 
 Agent0 answers a narrow question: *how do you run an LLM-driven coding agent
 through a fixed, predictable control loop instead of letting it improvise its
@@ -45,7 +53,7 @@ classes for extension points (`Planner`, `StepHandler`); no dependencies
 beyond the standard library; deliberately not clever — a "boring", fully
 inspectable foundation meant to be extended per-domain via `AgentBuilder`.
 
-### 1.2 Architecture
+### 1.3 Architecture
 
 ```
 TaskSpec ──▶ BaselinePlanner.create_plan() ──▶ Plan (4 fixed PlanSteps)
@@ -69,7 +77,7 @@ TaskSpec ──▶ BaselinePlanner.create_plan() ──▶ Plan (4 fixed PlanSte
 
 Every shell command a handler might run is meant to first pass through
 `PolicyEngine.evaluate_command()` (the guard is available; wiring a handler
-to call it is left to the integrator — see §1.5).
+to call it is left to the integrator — see §1.6).
 
 | Module | Responsibility |
 |---|---|
@@ -85,10 +93,10 @@ to call it is left to the integrator — see §1.5).
 | `cli.py` | `argparse`-based `agent0 run --objective ... [--constraint ...] [--acceptance-criterion ...]`, printing the `ExecutionResult` as JSON. |
 
 \* `contracts.md` and `tools.md` are Python source **saved with a `.md`
-extension** rather than `.py` (see §1.5, Limitations — this currently breaks
+extension** rather than `.py` (see §1.6, Limitations — this currently breaks
 imports).
 
-### 1.3 Why it's clever
+### 1.4 Why it's clever
 
 - **Protocols, not inheritance, for extension points.** `Planner` and
   `StepHandler` are `typing.Protocol`s. `StepExecutor.handlers` is a plain
@@ -115,7 +123,7 @@ imports).
   failed step and *still* writes to memory before returning — so a partial,
   failed run is exactly as auditable as a successful one.
 
-### 1.4 Capabilities
+### 1.5 Capabilities
 
 - Deterministic 4-phase planning for any `TaskSpec` (objective + constraints
   + acceptance criteria + metadata).
@@ -136,7 +144,7 @@ imports).
 - `LocalCommandTool`: a Windows-safe (`shlex.split(posix=False)`),
   non-shell (`shell=False`) subprocess runner with a configurable timeout.
 
-### 1.5 Limitations
+### 1.6 Limitations
 
 - **The package does not currently import.** `contracts.md` and `tools.md`
   contain real Python source (verified by reading them — `contracts.md`
@@ -182,7 +190,7 @@ imports).
   or remote execution model, no retries beyond the fixed `max_iterations`
   step cap.
 
-### 1.6 How to use it
+### 1.7 How to use it
 
 ```powershell
 cd Agent0
@@ -246,7 +254,15 @@ runtime = builder.build(AgentBlueprint(
 
 ## 2. Agent1 (`Agent1/` submodule, v0.2.0 — "agent factory")
 
-### 2.1 Overview
+### 2.1 Role definition
+
+> **Role:** Declarative agent-authoring framework — a **meta-tool** for
+> producing other agents. Agent1 does not itself perform a task; running
+> `agent0 new` scaffolds a self-contained, already-testable agent package
+> (manifest + I/O contracts + skills + policies + test cases) that a domain
+> expert configures without writing Python, and the shared runtime executes.
+
+### 2.2 Overview
 
 Agent1 answers a different, broader question: *how do you let people define
 new agents — as configuration, not code — while still getting a real
@@ -265,7 +281,7 @@ all. The framework ships zero third-party dependencies (`dependencies = []`
 in `pyproject.toml`) — everything is standard library (`tomllib`, `graphlib`,
 `hashlib`, `argparse`, `dataclasses`).
 
-### 2.2 Architecture
+### 2.3 Architecture
 
 ```
 agent.toml (manifest) ──▶ load_agent() ──▶ AgentDefinition
@@ -303,7 +319,7 @@ ExecutionResult (success, summary, step_results, outputs, blocked_reason)
 | `cli.py` | `argparse` subcommands: `new`, `validate`, `test [--all]`, `update [--all]`, `run --input`, `list`. |
 | `__init__.py` | Re-exports the public API from `core`, `factory`, `policies`. |
 
-### 2.3 Why it's clever
+### 2.4 Why it's clever
 
 - **DAG cycles (and worse) are rejected at construction, not at run time.**
   `Pipeline.__init__` builds a `producers` map and a dependency graph, then
@@ -372,7 +388,7 @@ ExecutionResult (success, summary, step_results, outputs, blocked_reason)
   eliminates an entire class of supply-chain and version-pinning risk for a
   framework meant to be embedded into many different agent packages.
 
-### 2.4 Capabilities
+### 2.5 Capabilities
 
 - `agent0 new <name> --purpose "..."` scaffolds a complete, immediately
   testable and runnable 4-step agent package (manifest, two JSON Schemas,
@@ -409,7 +425,7 @@ ExecutionResult (success, summary, step_results, outputs, blocked_reason)
   used identically for manifest validation, input/output contract checking,
   and self-validating the schemas themselves (`is_valid_schema`).
 
-### 2.5 Limitations
+### 2.6 Limitations
 
 - **`LLMStepHandler` is an unimplemented slot, not a working integration.**
   Calling `.handle()` always raises `NotImplementedError("No model backend
@@ -450,7 +466,7 @@ ExecutionResult (success, summary, step_results, outputs, blocked_reason)
   `on_node_error`/`on_pipeline_error` hooks and a re-raised exception) with
   no built-in retry.
 
-### 2.6 How to use it
+### 2.7 How to use it
 
 All commands below were actually executed against the verified Agent1
 source in this environment; output is reproduced exactly (paths shortened
@@ -537,6 +553,46 @@ agent0 list .
 
 ## 3. Agent0 vs Agent1: what changed and why
 
+### 3.1 Was Agent1 built *by* Agent0?
+
+**No — not mechanically.** This is worth stating plainly because the names
+invite the assumption that Agent0's own runtime was pointed at itself and
+"grew" Agent1 as an output. The repo's git history shows something different:
+
+- `e97abf6` ("Initial commit: Agent1 codebase") lands the entire v0.2.0
+  agent-factory source (`core.py`, `factory.py`, `policies.py`, `cli.py`,
+  `__init__.py`, both test files — 2,013 lines) in a **single commit**, not as
+  an incremental series of Agent0-run tasks with intermediate memory/run
+  records. There is no `.agent0/*.jsonl` history, run log, or `TaskSpec`
+  anywhere in the repository that documents Agent0 having executed a
+  "build Agent1" objective.
+- A separate, earlier commit (`62a535e`, "Rename Agent0 package to Agent1 and
+  add scaffold") *literally* renamed Agent0's existing package
+  (`src/agent0` → `src/agent1`, keeping `builder.py`/`executor.py`/
+  `planner.py`/`runtime.py` etc.) — a plausible first attempt at treating
+  Agent1 as "Agent0 renamed." That attempt is **not** what Agent1 actually is
+  today: the submodule commit `Agent1/` currently points to
+  (`bc24739`) contains only `src/agent0/{__init__,cli,core,factory,policies}.py`
+  — i.e. the wholesale rewrite from `e97abf6`, confirming the rename
+  experiment was abandoned in favor of a fresh design.
+- Architecturally, Agent0 also *couldn't* have generated Agent1's code even
+  if it had been run: its only shipped `StepHandler`
+  (`DefaultStepHandler`) unconditionally returns success without producing
+  any artifact (see §1.6), so there is no code-generation capability built
+  into Agent0 to delegate that work to.
+
+**What's actually true:** Agent1 is a hand-authored (or Copilot-session
+authored, but not Agent0-runtime-authored) *redesign*, informed by Agent0's
+lessons — same "boring, stdlib-only, strictly-typed dataclass" philosophy,
+same instinct to gate tool execution and keep an audit trail — but rebuilt
+around a validated DAG and declarative authoring rather than being produced
+by executing Agent0 against itself. So the premise "Agent0 is needed to build
+Agent1 to that quality" doesn't hold: Agent0 has no working step handler, so
+it cannot build *anything* at production quality yet; Agent1's quality comes
+from direct engineering, not from Agent0's execution loop.
+
+### 3.2 Feature comparison
+
 | Aspect | Agent0 (v0.1.0) | Agent1 (v0.2.0) | Why it changed |
 |---|---|---|---|
 | Plan structure | Fixed, linear 4-step sequence, identical for every task | Author-defined DAG of steps wired by matching input/output names, validated (cycle/duplicate-output rejection) at construction | Real workflows have independent sub-tasks (e.g. design vs. risk assessment) that don't need to be serialized, and a DAG catches broken step wiring before runtime |
@@ -548,7 +604,7 @@ agent0 list .
 | Extensibility model | Protocol-typed `Planner`/`StepHandler`, registered by hand in Python | `Node`/`Pipeline` DAG + `HookManager` (8 named events, LIFO dispatch) + pluggable `DataCatalog` dataset types | Adds cross-cutting extension points (hooks) instead of only per-step handler swapping |
 | Dependencies | Zero third-party (stdlib only) | Zero third-party (stdlib only) | Unchanged design principle — carried forward deliberately |
 | Model integration | Not modeled at all | Named, honest stub (`LLMStepHandler.handle()` raises `NotImplementedError`) | Makes the "where does the LLM plug in" question explicit and testable-around, rather than silently absent |
-| Validated in this repo | **No** — `contracts.md`/`tools.md` need renaming to `.py` before `import agent0` works (see §1.5) | **Yes** — 20/20 tests pass; every CLI subcommand exercised successfully | Documented plainly rather than glossed over |
+| Validated in this repo | **No** — `contracts.md`/`tools.md` need renaming to `.py` before `import agent0` works (see §1.6) | **Yes** — 20/20 tests pass; every CLI subcommand exercised successfully | Documented plainly rather than glossed over |
 
 **Bottom line**: Agent1 keeps Agent0's core convictions — small stdlib-only
 dataclasses, policy guardrails, append-only auditability — and rebuilds the
