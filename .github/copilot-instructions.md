@@ -39,9 +39,8 @@ TaskSpec → BaselinePlanner.create_plan() → Plan (4 fixed steps)
 
 Fixed step sequence (ids): `analyze-scope` → `design-approach` → `implement-solution` → `verify-outcome`, each with a `kind` (`analysis`, `design`, `implementation`, `verification`).
 
-- **`contracts.md` / `tools.md`** in `src/agent0/` — **these are Python source files with `.md` extension**, not documentation. Edit them like `.py` files.
 - **`builder.py`** — `AgentBuilder.build(AgentBlueprint)` creates a fully wired `Agent0Runtime` for a named domain; extend `blocked_command_patterns` (don't replace) per blueprint.
-- **`policies.py`** — `PolicyEngine` blocks commands via regex patterns; default list covers `rm -rf`, `del /f`, `format`, `git reset --hard`.
+- **`policies.py`** — `PolicyEngine` blocks commands via regex patterns; default list covers `rm -rf`, `del /f`, `format`, `git reset --hard`. `evaluate_command()` returns a `PolicyDecision`; `enforce_command()` raises `PolicyViolation`.
 - Config via env vars: `AGENT0_MODEL`, `AGENT0_MAX_ITERATIONS`, `AGENT0_STRICT_MODE`, `AGENT0_MEMORY_PATH`, `AGENT0_COMMAND_TIMEOUT` — `AgentConfig.from_env()` is the canonical factory.
 
 ### Key conventions
@@ -49,7 +48,7 @@ Fixed step sequence (ids): `analyze-scope` → `design-approach` → `implement-
 - All modules use `from __future__ import annotations` and `@dataclass(slots=True)`. No `__dict__`, no monkey-patching.
 - Memory is append-only JSONL at `.agent0/memory.jsonl` (blueprint-named sibling for variants). Never truncate; read via `MemoryStore.load_recent(limit)`.
 - Custom step logic: implement `StepHandler` protocol (`handle(task, step) -> StepResult`) and register on `StepExecutor.handlers[kind]`. `DefaultStepHandler` always succeeds — add real handlers before shipping domain logic.
-- `LocalCommandTool` uses `shlex.split(posix=False)` (Windows-safe) and never shells out with `shell=True`.
+- `LocalCommandTool` uses `shlex.split(posix=False)` (Windows-safe) and never shells out with `shell=True`. It enforces `PolicyEngine` before spawning a process and defaults to a real engine, so it is guarded even when constructed directly; prefer `Agent0Runtime.create_tool()` to inherit the runtime's policies and timeout.
 - Tests use `tmp_path` fixture for memory isolation; no mocking frameworks.
 - Python ≥ 3.11 required.
 

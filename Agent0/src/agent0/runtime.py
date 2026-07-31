@@ -8,6 +8,7 @@ from .executor import StepExecutor
 from .memory import MemoryStore
 from .planner import BaselinePlanner
 from .policies import PolicyEngine
+from .tools import LocalCommandTool
 
 
 @dataclass(slots=True)
@@ -27,6 +28,18 @@ class Agent0Runtime:
             executor=StepExecutor(),
             policies=PolicyEngine(),
             memory=MemoryStore(effective_config.memory_path),
+        )
+
+    def create_tool(self) -> LocalCommandTool:
+        """Build a command tool bound to this runtime's timeout and policies.
+
+        Step handlers should obtain their tool from here rather than
+        constructing one directly, so the runtime's policy set is always the
+        one enforced.
+        """
+        return LocalCommandTool(
+            timeout_seconds=self.config.command_timeout_seconds,
+            policies=self.policies,
         )
 
     def run(self, task: TaskSpec) -> ExecutionResult:

@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 import shlex
 import subprocess
 
+from .policies import PolicyEngine
+
 
 @dataclass(slots=True)
 class ToolResult:
@@ -17,10 +19,19 @@ class ToolResult:
 
 
 class LocalCommandTool:
-    def __init__(self, timeout_seconds: int = 120) -> None:
+    def __init__(
+        self,
+        timeout_seconds: int = 120,
+        policies: PolicyEngine | None = None,
+    ) -> None:
         self.timeout_seconds = timeout_seconds
+        # Secure by default: an unconfigured tool still enforces the baseline
+        # blocklist. Pass an explicit engine to extend or relax it.
+        self.policies = policies if policies is not None else PolicyEngine()
 
     def run(self, command: str) -> ToolResult:
+        # Enforce before anything is spawned; raises PolicyViolation on refusal.
+        self.policies.enforce_command(command)
         started_at = datetime.now(UTC).isoformat()
         argv = shlex.split(command, posix=False)
         completed = subprocess.run(

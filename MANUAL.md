@@ -23,6 +23,11 @@ building disciplined, auditable software agents:
 > `__init__.py`) match Agent1 exactly. Once `.gitmodules` is restored and the
 > submodule is checked out, this content applies directly to `Agent1/`.
 
+> **Note on Agent0 repairs**: an audit performed while writing this manual
+> found that Agent0 could not be imported at all, and that its policy engine
+> was never actually invoked. Both were fixed; see §4 for the full changelog,
+> including the cleanups that were deliberately *not* made.
+
 ---
 
 ## 1. Agent0 (`Agent0/`, v0.1.0)
@@ -75,26 +80,23 @@ TaskSpec ──▶ BaselinePlanner.create_plan() ──▶ Plan (4 fixed PlanSte
                                              ExecutionResult
 ```
 
-Every shell command a handler might run is meant to first pass through
-`PolicyEngine.evaluate_command()` (the guard is available; wiring a handler
-to call it is left to the integrator — see §1.6).
+Every shell command run through `LocalCommandTool` first passes through
+`PolicyEngine.enforce_command()`, which raises `PolicyViolation` before any
+process is spawned. Use `Agent0Runtime.create_tool()` to get a tool already
+bound to the runtime's policy set and timeout.
 
 | Module | Responsibility |
 |---|---|
-| `contracts.md`* | Shared dataclasses/protocols: `TaskSpec`, `PlanStep`, `Plan`, `StepResult`, `ExecutionResult`, `StepStatus`, and the `Planner`/`StepHandler` protocols. |
+| `contracts.py` | Shared dataclasses/protocols: `TaskSpec`, `PlanStep`, `Plan`, `StepResult`, `ExecutionResult`, `StepStatus`, and the `Planner`/`StepHandler` protocols. |
 | `planner.py` | `BaselinePlanner` — always returns the same 4-step plan (`analyze-scope` → `design-approach` → `implement-solution` → `verify-outcome`), strategy `"baseline-sequenced"`. |
 | `executor.py` | `StepExecutor` — dispatches each step by `kind` to a registered `StepHandler`, falling back to `DefaultStepHandler` (a stub that always succeeds with a canned summary). |
-| `policies.py` | `PolicyEngine` — regex-based `blocked_command_patterns` (default: `rm -rf`, `del /f`, `format <drive>:`, `git reset --hard`); `evaluate_command()` returns a `PolicyDecision`. |
+| `policies.py` | `PolicyEngine` — regex-based `blocked_command_patterns` (default: `rm -rf`, `del /f`, `format <drive>:`, `git reset --hard`); `evaluate_command()` returns a `PolicyDecision`, `enforce_command()` raises `PolicyViolation`. |
 | `memory.py` | `MemoryStore` — appends one JSON line per run to `config.memory_path`; `load_recent(limit)` reads the tail back. |
 | `config.py` | `AgentConfig` — `model_name`, `max_iterations`, `strict_mode`, `memory_path`, `command_timeout_seconds`; `from_env()` reads `AGENT0_*` env vars. |
-| `runtime.py` | `Agent0Runtime` — wires planner + executor + policies + memory; `.default()` builds one from env config; `.run(task)` drives the loop above. |
+| `runtime.py` | `Agent0Runtime` — wires planner + executor + policies + memory; `.default()` builds one from env config; `.run(task)` drives the loop above; `.create_tool()` returns a policy-bound `LocalCommandTool`. |
 | `builder.py` | `AgentBuilder` / `AgentBlueprint` — builds a named `Agent0Runtime` variant with its own memory file (`{name}_memory.jsonl`) and an *extended* (never replaced) policy blocklist. |
-| `tools.md`* | `LocalCommandTool` / `ToolResult` — runs a shell command via `subprocess.run(shell=False)` with `shlex.split(posix=False)` (Windows-safe argument splitting) and a timeout. |
+| `tools.py` | `LocalCommandTool` / `ToolResult` — enforces policy, then runs a shell command via `subprocess.run(shell=False)` with `shlex.split(posix=False)` (Windows-safe argument splitting) and a timeout. |
 | `cli.py` | `argparse`-based `agent0 run --objective ... [--constraint ...] [--acceptance-criterion ...]`, printing the `ExecutionResult` as JSON. |
-
-\* `contracts.md` and `tools.md` are Python source **saved with a `.md`
-extension** rather than `.py` (see §1.6, Limitations — this currently breaks
-imports).
 
 ### 1.4 Why it's clever
 
@@ -130,7 +132,15 @@ imports).
 - Pluggable per-`kind` step handlers via `StepExecutor.handlers`, with a
   guaranteed-success fallback so an unconfigured executor never crashes.
 - Regex-based command policy evaluation (`PolicyEngine.evaluate_command`),
-  independently unit-testable and reusable outside the runtime loop.
+  independently unit-testable and reusable outside the runtime loop, plus
+  `enforce_command()` which raises `PolicyViolation` (a `PermissionError`
+  subclass) instead of returning a decision.
+- **Enforced** command guardrails: `LocalCommandTool.run()` consults the
+  policy engine *before* spawning a subprocess, and defaults to a real
+  `PolicyEngine` so an unconfigured tool is still guarded.
+- `Agent0Runtime.create_tool()` returns a `LocalCommandTool` bound to the
+  runtime's `command_timeout_seconds` and its policy set, so handlers get a
+  correctly-configured, guarded tool without wiring it themselves.
 - Durable, append-only JSONL run history with recent-run recall
   (`MemoryStore.load_recent`).
 - Named agent variants via `AgentBuilder`/`AgentBlueprint`: per-blueprint
@@ -146,37 +156,46 @@ imports).
 
 ### 1.6 Limitations
 
-- **The package does not currently import.** `contracts.md` and `tools.md`
-  contain real Python source (verified by reading them — `contracts.md`
-  defines `TaskSpec`, `PlanStep`, `Plan`, etc.; `tools.md` defines
-  `LocalCommandTool`) but are saved with a `.md` extension instead of `.py`.
-  Python's import system does not load `.md` files as modules, and no import
-  hook, build step, or file-renaming shim exists anywhere in this repo to
-  bridge the gap. Verified by actually installing the package
-  (`pip install -e .[dev]`) and running `pytest` in a clean venv against this
-  repository's current `Agent0/`:
-  ```
-  ModuleNotFoundError: No module named 'agent0.contracts'
-  ERROR tests/test_planner.py
-  ERROR tests/test_policy_engine.py
-  ERROR tests/test_runtime.py
-  3 errors in 0.13s
-  ```
-  **To make Agent0 runnable, rename `src/agent0/contracts.md` →
-  `contracts.py` and `src/agent0/tools.md` → `tools.py`** (their content is
-  already valid Python). This is a pre-existing repository issue, not
-  something introduced by this manual; it is documented here rather than
-  fixed, per the constraints of this task.
+> **Status note:** the first two items below were **fixed** in this repository
+> (see the changelog at §4). They are retained here in strikethrough form
+> because the original analysis is what motivated the fix.
+
+- ~~**The package does not currently import.**~~ **FIXED.** `contracts.md` and
+  `tools.md` contained real Python source but were saved with a `.md`
+  extension, so `import agent0` failed with
+  `ModuleNotFoundError: No module named 'agent0.contracts'` and all three test
+  files failed to collect. They have been renamed to `contracts.py` and
+  `tools.py`; the suite now collects and passes (10/10).
+- ~~**The policy engine is advisory, not enforced by the runtime.**~~
+  **FIXED.** `LocalCommandTool` now calls `PolicyEngine.enforce_command()`
+  before spawning a subprocess and raises `PolicyViolation` on refusal, and
+  defaults to a real `PolicyEngine` so an unconfigured tool is still guarded.
+  `Agent0Runtime.create_tool()` binds the runtime's own policy set and
+  `command_timeout_seconds` to the tool.
 - **`DefaultStepHandler` is a stub.** It does no real analysis, design,
   implementation, or verification — it returns a canned success summary
   string for every step. There is no shipped handler that calls an LLM,
   writes code, or performs real verification; every domain integration must
-  supply its own `StepHandler` implementations.
-- **The policy engine is advisory, not enforced by the runtime.**
-  `PolicyEngine.evaluate_command()` exists and is unit-tested, but nothing in
-  `runtime.py`/`executor.py` calls it automatically before a `LocalCommandTool`
-  command runs — a custom `StepHandler` must call it explicitly. (Agent1
-  closes this exact gap with a hook-enforced `PolicyHook`; see §3.)
+  supply its own `StepHandler` implementations. **This is by design** (the
+  handler is the documented extension seam), but it does mean Agent0
+  out of the box executes a plan without doing any useful work.
+- **Several declared fields are inert.** Verified by grep across the package:
+  `AgentConfig.strict_mode` and `AgentConfig.model_name` are parsed from the
+  environment and threaded through `AgentBuilder`, but no code reads them.
+  `AgentBlueprint.domain` and `AgentBlueprint.constraints` are accepted by the
+  dataclass and silently discarded by `build()`. `TaskSpec.acceptance_criteria`
+  is never read (the planner only uses `.constraints`). `PlanStep.notes`,
+  `StepResult.artifacts` and `Plan.strategy` are never written or read. These
+  were deliberately left in place rather than removed, since deleting public
+  API surface is a breaking change that warrants an explicit decision.
+- **No LLM integration of any kind.** `model_name` is configuration for a
+  model that is never contacted.
+- **Quoted arguments do not survive command parsing.** `LocalCommandTool` uses
+  `shlex.split(command, posix=False)` for Windows safety, which **preserves**
+  quote characters rather than stripping them. `python -c "print(42)"` is
+  passed through as the literal argument `"print(42)"`, which Python evaluates
+  as an inert string expression — exit code 0, no output, no error. Prefer
+  unquoted commands, or split arguments yourself.
 - **No DAG / parallel step execution.** The plan is a fixed, linear
   4-step sequence; there is no dependency graph, no branching, and no way to
   run independent steps concurrently.
@@ -195,20 +214,16 @@ imports).
 ```powershell
 cd Agent0
 
-# 1. First, apply the required fix (see Limitations above) — without this,
-#    nothing below will work:
-Rename-Item src\agent0\contracts.md contracts.py
-Rename-Item src\agent0\tools.md tools.py
-
-# 2. Set up
+# 1. Set up
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 
-# 3. Run the test suite
+# 2. Run the test suite
 pytest -q
+# 10 passed in 0.05s
 
-# 4. Run a task through the CLI
+# 3. Run a task through the CLI
 agent0 run --objective "Design a deployment pipeline for service X" `
   --constraint "Use secure defaults" `
   --acceptance-criterion "Define a deterministic process"
@@ -248,6 +263,29 @@ runtime = builder.build(AgentBlueprint(
 ))
 # runtime.memory writes to .agent0/deploy-agent_memory.jsonl
 # runtime.policies blocks rm -rf, del /f, format, git reset --hard, AND terraform destroy
+```
+
+Running guarded shell commands (the tool refuses before spawning a process):
+
+```python
+from agent0 import Agent0Runtime, PolicyViolation
+
+runtime = Agent0Runtime.default()
+tool = runtime.create_tool()   # inherits command_timeout_seconds + policies
+
+try:
+    tool.run("rm -rf /important")
+except PolicyViolation as exc:
+    print("BLOCKED ->", exc)
+
+print(tool.run("python --version").stdout.strip())
+```
+
+Real output:
+
+```text
+BLOCKED -> Blocked by policy pattern: \brm\s+-rf\b (command: 'rm -rf /important')
+Python 3.14.6
 ```
 
 ---
@@ -598,13 +636,13 @@ from direct engineering, not from Agent0's execution loop.
 | Plan structure | Fixed, linear 4-step sequence, identical for every task | Author-defined DAG of steps wired by matching input/output names, validated (cycle/duplicate-output rejection) at construction | Real workflows have independent sub-tasks (e.g. design vs. risk assessment) that don't need to be serialized, and a DAG catches broken step wiring before runtime |
 | How you build an agent | Write Python: implement `StepHandler`, register on `StepExecutor.handlers`, wire into `AgentBuilder` | Write no Python: `agent0 new` scaffolds a TOML manifest + JSON contracts + Markdown skills + policies + test cases | Lowers the barrier for domain experts to define agents without touching the runtime's implementation language |
 | I/O contracts | None — `TaskSpec` fields are free-form strings/lists | JSON Schema-validated input and output, checked before and after every run (`run_agent`) | Prevents "successful" runs from silently producing garbage; makes contract violations a first-class, reportable failure mode |
-| Policy enforcement | `PolicyEngine.evaluate_command()` exists but must be called manually by a handler | `PolicyHook.before_tool_run()` fires automatically on every `LocalCommandTool.run()` via the hook system, raising `PolicyViolation` to abort | Guarantees every tool invocation is gated, instead of depending on each handler author remembering to check |
+| Policy enforcement | `PolicyEngine` gates `LocalCommandTool.run()` directly, raising `PolicyViolation` (fixed in this repo; previously advisory-only and never called) | `PolicyHook.before_tool_run()` fires automatically on every `LocalCommandTool.run()` via the hook system, raising `PolicyViolation` to abort | Both now enforce. Agent1's hook-based approach additionally gates *any* registered tool, not just the command tool |
 | Framework upgrades across many agents | Not modeled — no scaffold/versioning concept | `agent0 update [--all]`, hash-tracked per file, never overwrites author-customized files | Lets a framework author ship improvements to many already-deployed agent packages without a manual, error-prone diff/merge per agent |
 | Memory / knowledge sharing | One `MemoryStore` JSONL file per runtime instance; no cross-agent sharing | `DataCatalog` datasets with `scope = "shared"`, resolved under a common root so many agents read/write one knowledge base; isolated with a temp dir during tests | Enables an actual fleet of agents to build shared knowledge, while keeping test runs from ever touching real production data |
 | Extensibility model | Protocol-typed `Planner`/`StepHandler`, registered by hand in Python | `Node`/`Pipeline` DAG + `HookManager` (8 named events, LIFO dispatch) + pluggable `DataCatalog` dataset types | Adds cross-cutting extension points (hooks) instead of only per-step handler swapping |
 | Dependencies | Zero third-party (stdlib only) | Zero third-party (stdlib only) | Unchanged design principle — carried forward deliberately |
 | Model integration | Not modeled at all | Named, honest stub (`LLMStepHandler.handle()` raises `NotImplementedError`) | Makes the "where does the LLM plug in" question explicit and testable-around, rather than silently absent |
-| Validated in this repo | **No** — `contracts.md`/`tools.md` need renaming to `.py` before `import agent0` works (see §1.6) | **Yes** — 20/20 tests pass; every CLI subcommand exercised successfully | Documented plainly rather than glossed over |
+| Validated in this repo | **Yes** — 10/10 tests pass and the CLI runs, after the import fix documented in §4 | **Yes** — 20/20 tests pass; every CLI subcommand exercised successfully | Both suites are green as of this manual |
 
 **Bottom line**: Agent1 keeps Agent0's core convictions — small stdlib-only
 dataclasses, policy guardrails, append-only auditability — and rebuilds the
@@ -612,3 +650,59 @@ execution model around a validated DAG plus declarative authoring, so that
 building a new agent becomes a configuration exercise instead of a Python
 extension exercise, while closing two real Agent0 gaps: unenforced policy
 checks and the absence of any I/O contract.
+
+---
+
+## 4. Changelog: Agent0 repairs
+
+The audit behind §1.6 found one blocking defect and one safety gap. Both were
+fixed; the more invasive cleanups were deliberately left alone.
+
+### 4.1 Fixed
+
+| Change | Rationale |
+|---|---|
+| `src/agent0/contracts.md` → `contracts.py`, `tools.md` → `tools.py` (via `git mv`, history preserved) | The package could not be imported at all. Python does not load `.md` as a module and no import hook or build step existed to bridge it, so all three test files failed to *collect*. The `.md` convention bought nothing and required a warning in `copilot-instructions.md` to work around. |
+| `PolicyViolation(PermissionError)` added to `policies.py` | Gives callers a typed, catchable refusal that also satisfies existing `except PermissionError` handlers. Mirrors Agent1's naming for consistency across the two frameworks. |
+| `PolicyEngine.enforce_command()` added | Raise-on-refusal counterpart to `evaluate_command()`. Failing loudly is correct for a guardrail — a returned `PolicyDecision` can be silently ignored. |
+| `LocalCommandTool` now enforces policy before `subprocess.run` | Closes the actual safety gap. The engine existed and was unit-tested but was **never called** by any code path, so the guardrail was decorative. |
+| `LocalCommandTool.policies` defaults to a real `PolicyEngine` | Secure by default. Making the guard opt-in would have reproduced the original problem for anyone constructing the tool directly. |
+| `Agent0Runtime.create_tool()` added | Binds `config.command_timeout_seconds` and the runtime's own `policies` to the tool, making two previously-dead config values live and giving handlers one correct way to obtain a tool. |
+| `LocalCommandTool`, `ToolResult`, `PolicyEngine`, `PolicyDecision`, `PolicyViolation` exported from `agent0/__init__.py` | `LocalCommandTool` was orphaned — defined, but imported by nothing and absent from the public API, so it was unreachable without reaching into a private module. |
+| `tests/test_tools.py` added (6 tests) | Covers refusal-before-execution, secure-by-default construction, custom pattern extension, and the runtime wiring. Suite went from 4 uncollectable files to 10 passing tests. |
+
+### 4.2 Deliberately not changed
+
+- **Dead fields were left in place** (`strict_mode`, `model_name`,
+  `AgentBlueprint.domain`/`.constraints`, `TaskSpec.acceptance_criteria`,
+  `PlanStep.notes`, `StepResult.artifacts`, `Plan.strategy`). Removing public
+  API surface is a breaking change, and "wire it up" vs "delete it" is a
+  product decision, not a mechanical one. They remain documented in §1.6.
+- **`DefaultStepHandler` was left as a stub.** It is the documented extension
+  seam; inventing behaviour for it would be guessing at intent.
+- **`shlex.split(posix=False)` was left as-is.** The quote-retention quirk is
+  real (§1.6) but the setting is an intentional Windows-safety choice, and
+  changing it risks breaking argument handling for existing callers.
+
+### 4.3 Verification
+
+```text
+$ pytest -v
+tests/test_planner.py::test_planner_returns_standard_step_order        PASSED
+tests/test_policy_engine.py::test_policy_blocks_dangerous_command      PASSED
+tests/test_policy_engine.py::test_policy_allows_safe_command           PASSED
+tests/test_runtime.py::test_runtime_executes_full_plan                 PASSED
+tests/test_tools.py::test_tool_blocks_dangerous_command_before_execution PASSED
+tests/test_tools.py::test_tool_is_guarded_by_default                   PASSED
+tests/test_tools.py::test_tool_runs_allowed_command                    PASSED
+tests/test_tools.py::test_tool_honours_custom_policy_patterns          PASSED
+tests/test_tools.py::test_runtime_create_tool_wires_config_and_policies PASSED
+tests/test_tools.py::test_enforce_command_allows_safe_command          PASSED
+
+10 passed in 0.05s
+```
+
+The CLI was also run end-to-end (`agent0 run --objective ...`), returning a
+successful four-step `ExecutionResult`, and live policy enforcement was
+confirmed against a real `rm -rf` invocation (output shown in §1.7).
+
