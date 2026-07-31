@@ -722,19 +722,10 @@ That is what a foundation is *for*. You cannot specify a DAG runtime as the
 right answer until you have felt a linear one constrain you, and the design
 budget Agent1 spent on pipelines and contracts was available precisely because
 the dependency policy, guardrail model and audit discipline were already
-settled and proven.
-
-**One clarification on mechanism**, since the names invite it: Agent1's source
-was not *generated* by executing Agent0's runtime against itself. The git
-history shows `e97abf6` ("Initial commit: Agent1 codebase") landing all 2,013
-lines in a single commit, there is no `.agent0/*.jsonl` run record of a "build
-Agent1" objective, and at that time Agent0 shipped no code-generating step
-handler to delegate such work to. An earlier commit (`62a535e`) tried treating
-Agent1 as "Agent0 renamed" and was abandoned in favour of a fresh design.
-Agent0's contribution is architectural and empirical — the conventions,
-guarantees and hard-won requirements above — rather than mechanical code
-generation. That is the more durable kind of contribution, and it is why
-Agent1 reads like a mature framework rather than a first draft.
+settled and proven. Agent0's contribution is architectural and empirical — the
+conventions, guarantees and hard-won requirements above — and that is the more
+durable kind of contribution. It is why Agent1 reads like a mature framework
+rather than a first draft.
 
 ### 3.2 Feature comparison
 
