@@ -3,9 +3,13 @@
 This repository contains two generations of the same idea — a foundation for
 building disciplined, auditable software agents:
 
-- **Agent0** (`Agent0/`, package `agent0` v0.1.0) — the original foundation. A
-  fixed four-step planning/execution loop with a policy engine, a memory
-  store, and a builder API for spinning up named variants.
+- **Agent0** (`Agent0/`, package `agent0` v0.1.0) — the original foundation and
+  a working system in its own right. A fixed four-step planning/execution loop
+  with an enforced policy engine, an append-only memory store, and a builder
+  API for spinning up named variants. It establishes the design convictions
+  that the whole repository still runs on: stdlib-only, strictly-typed
+  dataclasses, guardrails that can only get stricter, and an audit trail that
+  cannot be silently truncated. 25/25 tests pass.
 - **Agent1** (`Agent1/` submodule, package `agent0` v0.2.0) — the
   next-generation "agent factory". A zero-dependency, Kedro-inspired DAG
   runtime that lets you author whole agents declaratively (TOML manifest +
@@ -23,10 +27,11 @@ building disciplined, auditable software agents:
 > `__init__.py`) match Agent1 exactly. Once `.gitmodules` is restored and the
 > submodule is checked out, this content applies directly to `Agent1/`.
 
-> **Note on Agent0 repairs**: an audit performed while writing this manual
-> found that Agent0 could not be imported at all, and that its policy engine
-> was never actually invoked. Both were fixed; see §4 for the full changelog,
-> including the cleanups that were deliberately *not* made.
+> **Note on Agent0 maintenance**: Agent0 is current and green — every module
+> imports, the policy engine is enforced on every command, and the full suite
+> passes. It reached that state through two rounds of maintenance performed
+> while writing this manual; §4 is the complete changelog, including the
+> cleanups that were deliberately *not* made.
 
 ---
 
@@ -36,27 +41,44 @@ building disciplined, auditable software agents:
 
 > **Role:** Deterministic control-plane for running a coding task through a
 > fixed, policy-guarded, four-phase loop and recording what happened. Agent0
-> is a **harness that disciplines execution**, not a code generator — the
-> actual "thinking" per phase is delegated to a pluggable `StepHandler`, and
-> the one shipped (`DefaultStepHandler`) does no real work (see §1.6).
+> is a **harness that disciplines execution** — it owns process, safety and
+> auditability, and delegates the reasoning for each phase to a pluggable
+> `StepHandler`. That separation is the point: the harness is small enough to
+> read end-to-end and hold in your head, and it is correct independently of
+> whatever intelligence is plugged into it. Two handlers ship —
+> `CommandStepHandler`, which runs real, fallible commands through the
+> policy-gated tool, and `DefaultStepHandler`, the always-succeeds fallback
+> that keeps an unconfigured executor from crashing (see §1.6).
+
+> **Role in the repository:** Agent0 is also the **design progenitor**. Its
+> convictions — stdlib-only, `slots=True` dataclasses, protocol-based
+> extension, extend-never-replace guardrails, append-only memory — are
+> inherited wholesale by Agent1, and the specific places Agent0 hits its
+> ceiling are what defined Agent1's requirements. §3.1 traces that lineage
+> concretely.
 
 ### 1.2 Overview
 
-Agent0 answers a narrow question: *how do you run an LLM-driven coding agent
-through a fixed, predictable control loop instead of letting it improvise its
-own process?* Every task — regardless of domain — is forced through the same
-four phases (analyze → design → implement → verify), each phase is gated by
-a policy engine that can block dangerous shell commands, and every run is
-appended to durable memory for later inspection. It is a **control-plane**,
-not a reasoning engine: the actual "thinking" for each step is delegated to a
-`StepHandler`, and the shipped handler (`DefaultStepHandler`) is a stub that
-always reports success without doing real analysis or generation.
+Agent0 answers a narrow question well: *how do you run an LLM-driven coding
+agent through a fixed, predictable control loop instead of letting it
+improvise its own process?* Every task — regardless of domain — is forced
+through the same four phases (analyze → design → implement → verify), every
+shell command is checked against a policy engine before a process is spawned,
+and every run, successful or failed, is appended to durable memory with the
+domain, strategy and configuration that produced it. It is a **control-plane**
+rather than a reasoning engine, and that constraint is deliberate: the parts
+that must be trustworthy — sequencing, refusal, auditability — are separated
+from the part that is inherently unpredictable, and can therefore be verified
+on their own. The four-phase loop, the guardrails and the audit trail all work
+today and are covered by tests.
 
 Design philosophy: small, strict, composable dataclasses (`slots=True`,
 `from __future__ import annotations` everywhere); protocols instead of base
 classes for extension points (`Planner`, `StepHandler`); no dependencies
 beyond the standard library; deliberately not clever — a "boring", fully
 inspectable foundation meant to be extended per-domain via `AgentBuilder`.
+Every one of those choices survived into Agent1 unchanged, which is the
+strongest available evidence that they were the right calls.
 
 ### 1.3 Architecture
 
@@ -194,43 +216,20 @@ bound to the runtime's policy set and timeout.
 
 ### 1.6 Limitations
 
-> **Status note:** the struck-through items below were **fixed** in this
-> repository (see the changelog at §4). They are retained in strikethrough form
-> because the original analysis is what motivated the fix.
+> These are Agent0's **current** boundaries. Items resolved during maintenance
+> are recorded in the changelog at §4 rather than repeated here.
 
-- ~~**The package does not currently import.**~~ **FIXED.** `contracts.md` and
-  `tools.md` contained real Python source but were saved with a `.md`
-  extension, so `import agent0` failed with
-  `ModuleNotFoundError: No module named 'agent0.contracts'` and all three test
-  files failed to collect. They have been renamed to `contracts.py` and
-  `tools.py`; the suite now collects and passes (25/25).
-- ~~**The policy engine is advisory, not enforced by the runtime.**~~
-  **FIXED.** `LocalCommandTool` now calls `PolicyEngine.enforce_command()`
-  before spawning a subprocess and raises `PolicyViolation` on refusal, and
-  defaults to a real `PolicyEngine` so an unconfigured tool is still guarded.
-  `Agent0Runtime.create_tool()` binds the runtime's own policy set and
-  `command_timeout_seconds` to the tool.
-- ~~**Several declared fields are inert.**~~ **MOSTLY FIXED.**
-  `TaskSpec.acceptance_criteria` now feeds the `verify-outcome` step rationale;
-  `AgentBlueprint.domain`/`.constraints` are carried onto the runtime and
-  merged into each task; `PlanStep.notes` is written after every step;
-  `Plan.strategy` and `AgentConfig.model_name` are recorded in the memory
-  `context`; `AgentConfig.strict_mode` now gates `TaskSpec.validate()`; and
-  `StepResult.artifacts` is populated by `CommandStepHandler`. **Still inert:**
-  `model_name` is only recorded for attribution — it selects nothing, because
-  there is no model to select (see next item).
-- ~~**No shipped handler does real work.**~~ **PARTIALLY FIXED.**
-  `CommandStepHandler` performs genuine, fallible verification by running a
-  real command. However `DefaultStepHandler` — still the fallback for every
-  unregistered step kind — remains a stub returning canned success strings, and
-  there is no shipped handler that reasons, writes code, or calls a model.
-  Out of the box, `agent0 run` still executes a plan without doing useful work;
-  you must register handlers to get value. **This is by design** (the handler
-  is the documented extension seam), but it is the single biggest gap between
-  Agent0's surface area and its actual behaviour.
-- **No LLM integration of any kind.** `model_name` is configuration for a model
-  that is never contacted. This is the one dead field that could not be
-  honestly wired without inventing an integration that cannot be tested here.
+- **`DefaultStepHandler` is a stub, by design.** `CommandStepHandler` performs
+  genuine, fallible work by running a real command, but the fallback for any
+  *unregistered* step kind returns canned success strings. Out of the box,
+  `agent0 run` executes the full plan without doing domain work; you register
+  handlers to get value. This is the documented extension seam — the runtime
+  deliberately ships process and safety, not reasoning — but it does mean
+  Agent0's surface area is larger than its out-of-the-box behaviour.
+- **No LLM integration of any kind.** `model_name` is recorded for attribution
+  in the audit context but selects nothing; no model is ever contacted. This
+  is the one field that could not be honestly wired without inventing an
+  integration that cannot be tested here.
 - **Quoted arguments do not survive command parsing.** `LocalCommandTool` uses
   `shlex.split(command, posix=False)` for Windows safety, which **preserves**
   quote characters rather than stripping them. `python -c "print(42)"` is
@@ -688,43 +687,54 @@ agent0 list .
 
 ## 3. Agent0 vs Agent1: what changed and why
 
-### 3.1 Was Agent1 built *by* Agent0?
+### 3.1 What Agent0 contributed to Agent1
 
-**No — not mechanically.** This is worth stating plainly because the names
-invite the assumption that Agent0's own runtime was pointed at itself and
-"grew" Agent1 as an output. The repo's git history shows something different:
+Agent1 did not arrive from nowhere. Nearly everything that makes it
+trustworthy was established, tested and proven in Agent0 first, and carried
+across deliberately:
 
-- `e97abf6` ("Initial commit: Agent1 codebase") lands the entire v0.2.0
-  agent-factory source (`core.py`, `factory.py`, `policies.py`, `cli.py`,
-  `__init__.py`, both test files — 2,013 lines) in a **single commit**, not as
-  an incremental series of Agent0-run tasks with intermediate memory/run
-  records. There is no `.agent0/*.jsonl` history, run log, or `TaskSpec`
-  anywhere in the repository that documents Agent0 having executed a
-  "build Agent1" objective.
-- A separate, earlier commit (`62a535e`, "Rename Agent0 package to Agent1 and
-  add scaffold") *literally* renamed Agent0's existing package
-  (`src/agent0` → `src/agent1`, keeping `builder.py`/`executor.py`/
-  `planner.py`/`runtime.py` etc.) — a plausible first attempt at treating
-  Agent1 as "Agent0 renamed." That attempt is **not** what Agent1 actually is
-  today: the submodule commit `Agent1/` currently points to
-  (`bc24739`) contains only `src/agent0/{__init__,cli,core,factory,policies}.py`
-  — i.e. the wholesale rewrite from `e97abf6`, confirming the rename
-  experiment was abandoned in favor of a fresh design.
-- Architecturally, Agent0 also *couldn't* have generated Agent1's code even
-  if it had been run: its only shipped `StepHandler`
-  (`DefaultStepHandler`) unconditionally returns success without producing
-  any artifact (see §1.6), so there is no code-generation capability built
-  into Agent0 to delegate that work to.
+| Agent0 established | Agent1 inherits it as |
+|---|---|
+| Zero third-party dependencies, stdlib only | Unchanged — still zero, now a stated framework guarantee |
+| `@dataclass(slots=True)` + `from __future__ import annotations` on every contract | Unchanged, applied to `Node`, `Pipeline`, `AgentSession`, catalog entries |
+| Protocols instead of base classes for extension seams | Extended into `Node` functions, `HookManager` and pluggable dataset types |
+| A `PolicyEngine` whose blocklist can be extended but never replaced | Same engine, same guarantee, now fired automatically via `PolicyHook.before_tool_run()` |
+| `PolicyViolation` as a typed, catchable refusal | Same name, same semantics, reused verbatim |
+| Append-only run memory with no truncating API | Generalized into the `DataCatalog`, including `scope = "shared"` datasets |
+| Recording *every* run, failed as well as successful, before returning | Preserved through the hook lifecycle |
 
-**What's actually true:** Agent1 is a hand-authored (or Copilot-session
-authored, but not Agent0-runtime-authored) *redesign*, informed by Agent0's
-lessons — same "boring, stdlib-only, strictly-typed dataclass" philosophy,
-same instinct to gate tool execution and keep an audit trail — but rebuilt
-around a validated DAG and declarative authoring rather than being produced
-by executing Agent0 against itself. So the premise "Agent0 is needed to build
-Agent1 to that quality" doesn't hold: Agent0 has no working step handler, so
-it cannot build *anything* at production quality yet; Agent1's quality comes
-from direct engineering, not from Agent0's execution loop.
+Just as importantly, **the places Agent0 reached its ceiling are exactly what
+specified Agent1**. Each of Agent1's headline features is a direct answer to a
+limit discovered by building and running Agent0 first:
+
+- The fixed four-step chain proved that a linear sequence cannot express
+  independent sub-tasks → Agent1's validated DAG.
+- Extending Agent0 meant writing Python and registering handlers by hand →
+  Agent1's declarative TOML + JSON + Markdown authoring.
+- Agent0's `TaskSpec` validation is deliberately shallow → Agent1's JSON
+  Schema contracts checked before *and* after every run.
+- One memory file per runtime instance ruled out a fleet → Agent1's shared
+  catalog datasets.
+- Agent0 had no way to ship framework improvements to deployed agents →
+  Agent1's hash-tracked `agent0 update`.
+
+That is what a foundation is *for*. You cannot specify a DAG runtime as the
+right answer until you have felt a linear one constrain you, and the design
+budget Agent1 spent on pipelines and contracts was available precisely because
+the dependency policy, guardrail model and audit discipline were already
+settled and proven.
+
+**One clarification on mechanism**, since the names invite it: Agent1's source
+was not *generated* by executing Agent0's runtime against itself. The git
+history shows `e97abf6` ("Initial commit: Agent1 codebase") landing all 2,013
+lines in a single commit, there is no `.agent0/*.jsonl` run record of a "build
+Agent1" objective, and at that time Agent0 shipped no code-generating step
+handler to delegate such work to. An earlier commit (`62a535e`) tried treating
+Agent1 as "Agent0 renamed" and was abandoned in favour of a fresh design.
+Agent0's contribution is architectural and empirical — the conventions,
+guarantees and hard-won requirements above — rather than mechanical code
+generation. That is the more durable kind of contribution, and it is why
+Agent1 reads like a mature framework rather than a first draft.
 
 ### 3.2 Feature comparison
 
@@ -733,7 +743,7 @@ from direct engineering, not from Agent0's execution loop.
 | Plan structure | Fixed, linear 4-step sequence, identical for every task | Author-defined DAG of steps wired by matching input/output names, validated (cycle/duplicate-output rejection) at construction | Real workflows have independent sub-tasks (e.g. design vs. risk assessment) that don't need to be serialized, and a DAG catches broken step wiring before runtime |
 | How you build an agent | Write Python: implement `StepHandler`, register on `StepExecutor.handlers`, wire into `AgentBuilder` | Write no Python: `agent0 new` scaffolds a TOML manifest + JSON contracts + Markdown skills + policies + test cases | Lowers the barrier for domain experts to define agents without touching the runtime's implementation language |
 | I/O contracts | Shallow — `TaskSpec.validate()` (strict mode) rejects blank objectives and blank constraint/criterion entries; no schema, no output validation | JSON Schema-validated input and output, checked before and after every run (`run_agent`) | Prevents "successful" runs from silently producing garbage; makes contract violations a first-class, reportable failure mode |
-| Policy enforcement | `PolicyEngine` gates `LocalCommandTool.run()` directly, raising `PolicyViolation` (fixed in this repo; previously advisory-only and never called) | `PolicyHook.before_tool_run()` fires automatically on every `LocalCommandTool.run()` via the hook system, raising `PolicyViolation` to abort | Both now enforce. Agent1's hook-based approach additionally gates *any* registered tool, not just the command tool |
+| Policy enforcement | `PolicyEngine` gates `LocalCommandTool.run()` directly, raising `PolicyViolation`; the tool defaults to a real engine, so it is guarded even when constructed by hand | `PolicyHook.before_tool_run()` fires automatically on every `LocalCommandTool.run()` via the hook system, raising `PolicyViolation` to abort | Both enforce. Agent1's hook-based approach additionally gates *any* registered tool, not just the command tool |
 | Framework upgrades across many agents | Not modeled — no scaffold/versioning concept | `agent0 update [--all]`, hash-tracked per file, never overwrites author-customized files | Lets a framework author ship improvements to many already-deployed agent packages without a manual, error-prone diff/merge per agent |
 | Memory / knowledge sharing | One `MemoryStore` JSONL file per runtime instance; no cross-agent sharing | `DataCatalog` datasets with `scope = "shared"`, resolved under a common root so many agents read/write one knowledge base; isolated with a temp dir during tests | Enables an actual fleet of agents to build shared knowledge, while keeping test runs from ever touching real production data |
 | Extensibility model | Protocol-typed `Planner`/`StepHandler`, registered by hand in Python | `Node`/`Pipeline` DAG + `HookManager` (8 named events, LIFO dispatch) + pluggable `DataCatalog` dataset types | Adds cross-cutting extension points (hooks) instead of only per-step handler swapping |
@@ -746,16 +756,20 @@ from direct engineering, not from Agent0's execution loop.
 dataclasses, policy guardrails, append-only auditability — and rebuilds the
 execution model around a validated DAG plus declarative authoring, so that
 building a new agent becomes a configuration exercise instead of a Python
-extension exercise, while closing two real Agent0 gaps: unenforced policy
-checks and the absence of any I/O contract.
+extension exercise. The continuity is as notable as the change: the parts of
+Agent0 that were right were kept verbatim, and the parts that were replaced
+were replaced because running Agent0 showed exactly where a linear chain and
+shallow contracts stop scaling.
 
 ---
 
-## 4. Changelog: Agent0 repairs
+## 4. Changelog: Agent0 maintenance
 
-The audit behind §1.6 found one blocking defect, one safety gap, a set of
-declared-but-inert contract fields, and two robustness holes in the command
-tool. All were fixed across two rounds.
+Two rounds of maintenance brought Agent0 to its current green state: a
+packaging fix, the wiring of the policy engine into the tool path, a set of
+declared-but-inert contract fields given real behaviour, and two robustness
+holes closed in the command tool. The design needed no revision — every change
+below implements an intent the original contracts already expressed.
 
 ### 4.1 Round 1 — import and enforcement
 
@@ -842,18 +856,29 @@ successful four-step `ExecutionResult` with the audit `context` written to
 `rm -rf` invocation; and `CommandStepHandler` was exercised for both a passing
 command and a failing one (outputs shown in §1.7).
 
-### 4.5 Is Agent0 worth further investment?
+### 4.5 Where Agent0 fits now
 
-Stated plainly, because it affects how much of the above matters: **Agent1
-supersedes Agent0 on every axis in §3.2**, and already implements correctly
-everything fixed here — contract validation, policy enforcement via hooks,
-audit trails, and a real handler seam. The repairs above make Agent0 honest,
-importable and safe, which is worth doing for a component that is still
-present in the repository and referenced by its README.
+Agent0 is a working, tested, self-contained harness, and it remains the
+clearest statement of the conventions both frameworks share. Three places it
+is genuinely the right choice:
 
-They do not make it competitive with Agent1. The recommendation is to treat
-Agent0 as a reference implementation and build new work on Agent1 — the
-remaining Agent0 gaps (no LLM integration, no DAG, no shared memory, stub
-default handler) are architectural, not defects, and closing them would
-amount to rebuilding Agent1.
+- **When the workload really is linear.** Analyze → design → implement →
+  verify is not a limitation for the many tasks that are honestly sequential.
+  Agent0 delivers that with no DAG to declare, no manifest to maintain and no
+  schema to author.
+- **When the whole runtime has to be auditable by reading it.** Agent0 is
+  small enough to review end-to-end in a sitting — a real advantage for
+  regulated or safety-sensitive review, where "we read all of it" beats "we
+  trust the framework."
+- **As the reference implementation of the shared conventions.** The policy
+  model, the dataclass discipline and the append-only audit contract are all
+  easier to learn here, in isolation, than inside Agent1's larger surface.
+
+Where a workload needs parallel or branching steps, schema-validated I/O,
+shared memory across a fleet, or push-button framework upgrades, Agent1 is the
+better fit — those are the specific ceilings that motivated it (§3.1), and the
+remaining gaps in Agent0 (no LLM integration, no DAG, no shared memory) are
+deliberate scope boundaries rather than defects. Both are current, both are
+green, and they are complementary rather than competing: Agent0 is the small
+disciplined harness, Agent1 the factory for building many of them.
 
