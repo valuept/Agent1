@@ -13,9 +13,15 @@ class MemoryStore:
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
-    def append_run(self, task: TaskSpec, step_results: list[StepResult]) -> None:
+    def append_run(
+        self,
+        task: TaskSpec,
+        step_results: list[StepResult],
+        context: dict[str, str] | None = None,
+    ) -> None:
         entry = {
             "timestamp": datetime.now(UTC).isoformat(),
+            "context": context or {},
             "task": asdict(task),
             "steps": [asdict(step) for step in step_results],
         }

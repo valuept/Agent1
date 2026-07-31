@@ -47,5 +47,23 @@ def test_runtime_create_tool_wires_config_and_policies(tmp_path: Path) -> None:
     assert tool.policies is runtime.policies
 
 
+def test_tool_returns_timeout_result_instead_of_raising() -> None:
+    # A hung child (here, the interactive REPL) must become a recorded failure,
+    # not an exception that aborts the run before anything is written to memory.
+    tool = LocalCommandTool(timeout_seconds=2)
+    result = tool.run("python -X ignored")
+
+    assert result.exit_code == 124
+    assert "timed out" in result.stderr
+
+
+def test_tool_returns_not_found_result_instead_of_raising() -> None:
+    tool = LocalCommandTool(timeout_seconds=10)
+    result = tool.run("definitely-not-a-real-binary-xyz")
+
+    assert result.exit_code == 127
+    assert result.stderr
+
+
 def test_enforce_command_allows_safe_command() -> None:
     PolicyEngine().enforce_command("pytest -q")

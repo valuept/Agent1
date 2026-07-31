@@ -13,12 +13,33 @@ class StepStatus(str, Enum):
     BLOCKED = "blocked"
 
 
+class TaskValidationError(ValueError):
+    """Raised when a TaskSpec fails validation under strict mode."""
+
+
 @dataclass(slots=True)
 class TaskSpec:
     objective: str
     constraints: list[str] = field(default_factory=list)
     acceptance_criteria: list[str] = field(default_factory=list)
     metadata: dict[str, str] = field(default_factory=dict)
+
+    def validate(self) -> None:
+        """Check the task is well-formed. Raises TaskValidationError.
+
+        Called by Agent0Runtime.run() when config.strict_mode is True.
+        """
+        if not self.objective or not self.objective.strip():
+            raise TaskValidationError("objective must be a non-empty string")
+        for label, values in (
+            ("constraints", self.constraints),
+            ("acceptance_criteria", self.acceptance_criteria),
+        ):
+            for index, value in enumerate(values):
+                if not isinstance(value, str) or not value.strip():
+                    raise TaskValidationError(
+                        f"{label}[{index}] must be a non-empty string (got {value!r})"
+                    )
 
 
 @dataclass(slots=True)

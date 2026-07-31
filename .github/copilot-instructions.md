@@ -41,14 +41,15 @@ Fixed step sequence (ids): `analyze-scope` → `design-approach` → `implement-
 
 - **`builder.py`** — `AgentBuilder.build(AgentBlueprint)` creates a fully wired `Agent0Runtime` for a named domain; extend `blocked_command_patterns` (don't replace) per blueprint.
 - **`policies.py`** — `PolicyEngine` blocks commands via regex patterns; default list covers `rm -rf`, `del /f`, `format`, `git reset --hard`. `evaluate_command()` returns a `PolicyDecision`; `enforce_command()` raises `PolicyViolation`.
-- Config via env vars: `AGENT0_MODEL`, `AGENT0_MAX_ITERATIONS`, `AGENT0_STRICT_MODE`, `AGENT0_MEMORY_PATH`, `AGENT0_COMMAND_TIMEOUT` — `AgentConfig.from_env()` is the canonical factory.
+- Config via env vars: `AGENT0_MODEL`, `AGENT0_MAX_ITERATIONS`, `AGENT0_STRICT_MODE`, `AGENT0_MEMORY_PATH`, `AGENT0_COMMAND_TIMEOUT` — `AgentConfig.from_env()` is the canonical factory. `strict_mode` (default on) makes `run()` call `TaskSpec.validate()`, raising `TaskValidationError` on blank objective/constraints/criteria. `model_name` is recorded for attribution only — there is no LLM integration.
 
 ### Key conventions
 
 - All modules use `from __future__ import annotations` and `@dataclass(slots=True)`. No `__dict__`, no monkey-patching.
-- Memory is append-only JSONL at `.agent0/memory.jsonl` (blueprint-named sibling for variants). Never truncate; read via `MemoryStore.load_recent(limit)`.
-- Custom step logic: implement `StepHandler` protocol (`handle(task, step) -> StepResult`) and register on `StepExecutor.handlers[kind]`. `DefaultStepHandler` always succeeds — add real handlers before shipping domain logic.
-- `LocalCommandTool` uses `shlex.split(posix=False)` (Windows-safe) and never shells out with `shell=True`. It enforces `PolicyEngine` before spawning a process and defaults to a real engine, so it is guarded even when constructed directly; prefer `Agent0Runtime.create_tool()` to inherit the runtime's policies and timeout.
+- Memory is append-only JSONL at `.agent0/memory.jsonl` (blueprint-named sibling for variants). Never truncate; read via `MemoryStore.load_recent(limit)`. Each entry carries a `context` block (`domain`, `model_name`, `strategy`, `strict_mode`) for attribution.
+- Custom step logic: implement `StepHandler` protocol (`handle(task, step) -> StepResult`) and register on `StepExecutor.handlers[kind]`. `DefaultStepHandler` always succeeds — add real handlers before shipping domain logic. `CommandStepHandler(command, tool)` is the shipped real handler: it runs a command through the policy-gated tool and reports the true exit status plus artifacts.
+- `AgentBlueprint.domain`/`.constraints` are carried onto the built runtime; blueprint constraints are merged ahead of each task's own and the caller's `TaskSpec` is never mutated. Extend, never replace.
+- `LocalCommandTool` uses `shlex.split(posix=False)` (Windows-safe) and never shells out with `shell=True`. It enforces `PolicyEngine` before spawning a process and defaults to a real engine, so it is guarded even when constructed directly; prefer `Agent0Runtime.create_tool()` to inherit the runtime's policies and timeout. Timeouts return exit `124` and missing executables `127` rather than raising, so failures reach the audit trail; only policy violations raise.
 - Tests use `tmp_path` fixture for memory isolation; no mocking frameworks.
 - Python ≥ 3.11 required.
 

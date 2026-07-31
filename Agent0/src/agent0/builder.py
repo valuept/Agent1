@@ -40,4 +40,6 @@ class AgentBuilder:
             executor=StepExecutor(),
             policies=policies,
             memory=MemoryStore(config.memory_path),
+            domain=blueprint.domain,
+            constraints=list(blueprint.constraints),
         )

@@ -6,6 +6,11 @@ from .contracts import Plan, PlanStep, TaskSpec
 class BaselinePlanner:
     def create_plan(self, task: TaskSpec) -> Plan:
         constraints_note = " | ".join(task.constraints) if task.constraints else "No explicit constraints."
+        criteria_note = (
+            " | ".join(task.acceptance_criteria)
+            if task.acceptance_criteria
+            else "No explicit acceptance criteria."
+        )
         steps = [
             PlanStep(
                 id="analyze-scope",
@@ -29,7 +34,7 @@ class BaselinePlanner:
                 id="verify-outcome",
                 title="Verify outcome",
                 kind="verification",
-                rationale="Confirm acceptance criteria and quality expectations are met.",
+                rationale=f"Confirm acceptance criteria are met. Criteria: {criteria_note}",
             ),
         ]
         return Plan(task=task, steps=steps, strategy="baseline-sequenced")
